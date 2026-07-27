@@ -2,7 +2,7 @@
 
 Claude Code 上で「調査 → 設計 → 製造(実装) → テスト」を自律的に回す開発エージェントのための、基本ファイル一式。設計後とテスト後の2箇所に人間の確認ゲートを設けている。
 
-運用ルールの詳細は [CLAUDE.md](./CLAUDE.md) を参照。
+運用ルールの詳細は [CLAUDE.md](./CLAUDE.md) を参照。パイプライン全体の図解は [docs/pipeline-overview.html](./docs/pipeline-overview.html)(ブラウザで直接開ける)を参照。
 
 ## 使い方
 
@@ -35,6 +35,7 @@ CLAUDE.md                 運用マニュアル(ワークフロー・ゲート�
   settings.json            プロジェクト共有設定(worktree.baseRef: "head" など)
   worktrees/<topic-slug>/  /implement が作成する、トピック専用の git worktree(マージ後に削除)
 docs/
+  pipeline-overview.html   運用パイプライン全体の図解(手動更新)
   investigations/          調査ドキュメント(/investigate の成果物)
     _parts/<topic-slug>/    並列調査(ファンアウト)時の観点ごとの作業ファイル
   designs/                 設計ドキュメント(/design の成果物)
@@ -76,6 +77,10 @@ docs/
 - **テスト後**: テスト結果を確認し、このサイクルをクローズしてよいかを確認される。承認するまでクローズされない。
 
 いずれも `AskUserQuestion` で選択肢(承認/修正依頼/差し戻し)が提示されるので、その場で判断すればよい。
+
+## パイプライン図解の保守について
+
+`docs/pipeline-overview.html` は `CLAUDE.md` と各コマンドファイルの内容を人手で図解したものであり、**自動生成・自動同期はされない**。ワークフロー(ゲート・レビューループ・ワークツリー分離・タスク分割等)を変更したら、このファイルの該当ステージも合わせて更新すること。忘れると内容が古くなる。
 
 ## このリポジトリ自体について
 
