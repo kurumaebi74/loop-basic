@@ -64,7 +64,7 @@
 - `.claude/worktrees/<topic-slug>/` … 実装・テストフェーズ用に分離された git worktree(詳細は後述)。`.gitignore` 対象で、通常はマージ後に削除される
 - `.claude/commands/` … `/investigate` `/design` `/implement` `/test` `/cycle` の定義
 - `.claude/agents/` … 各フェーズを担当するサブエージェント定義(investigator / designer / implementer / tester / design-reviewer / code-reviewer)
-- `.claude/settings.json` … プロジェクト共有設定。`worktree.baseRef: "head"` を設定済み(このリポジトリにはリモートがないため、ワークツリーはローカルHEADから分岐する)
+- `.claude/settings.json` … プロジェクト共有設定。`worktree.baseRef: "head"` を設定済み。このワークフローはコミットのたびに `origin` へpushするわけではなくローカルの `main` が日々の作業の実体であるため、ワークツリーは(`origin/main` ではなく)常にローカルHEADから分岐する
 
 ## 共有メモリ(エージェント間の記憶共有)
 
@@ -109,7 +109,7 @@
 
 ### 仕組み
 
-1. `/implement` は実装を始める前に、ベースブランチの未コミット変更(直前の調査・設計ドキュメントなど)を先にコミットしたうえで、`EnterWorktree`(`name: <topic-slug>`)でトピック専用のワークツリー(`.claude/worktrees/<topic-slug>`、専用ブランチ)に入る。分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` によりローカルHEAD(このリポジトリにはリモートがないため)。
+1. `/implement` は実装を始める前に、ベースブランチの未コミット変更(直前の調査・設計ドキュメントなど)を先にコミットしたうえで、`EnterWorktree`(`name: <topic-slug>`)でトピック専用のワークツリー(`.claude/worktrees/<topic-slug>`、専用ブランチ)に入る。分岐元は `.claude/settings.json` の `worktree.baseRef: "head"` によりローカルHEAD(pushは都度行われるとは限らないため、`origin/main` ではなくローカルの最新状態から分岐する)。
 2. `/implement`・`/test` はこのワークツリー内で実装・コミット・テストを行う。実装フェーズでは複数の `implementer` が並列で動くことがあるため、コミットは原則としてメインエージェントがタスク単位でまとめて行う(詳細は「実装フェーズのタスク分割・並列化」節)。ベースブランチとは分離されているため、こまめなコミット自体は安全。
 3. `/test` のゲート2で人間が「承認してクローズ」を選んだ場合にのみ、`ExitWorktree(action: "keep")` でベースブランチに戻り、`git merge <topic-branch>` でベースブランチへ統合し、成功したらワークツリーとブランチを削除する。マージがコンフリクトした場合は自動解決せず人間に報告する。
 4. ゲート2で「修正依頼」「設計からやり直し」が選ばれた場合は、ワークツリーを削除せずそのまま残し、同じブランチ内で作業を継続する。
