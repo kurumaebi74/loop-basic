@@ -141,7 +141,7 @@
 
 ## 開発・検証コマンド
 
-実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `backend`=Express, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
+実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `backend`=NestJS, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
 
 - 型チェック: `cd sample-app && npm run typecheck`
 - Lint: `cd sample-app && npm run lint`(サイズ/複雑さ/型の締め付けルールは `warn`。詳細は「静的解析・自動チェックの考え方」)

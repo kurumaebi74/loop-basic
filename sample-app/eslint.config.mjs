@@ -23,6 +23,11 @@ export default tseslint.config(
       // 型の締め付け(strictプリセットに加えて明示)。まずは warn。
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-non-null-assertion": "warn",
+
+      // backend(NestJS)の @Module クラスはデコレータだけを持つ「空クラス」が正しい書き方であり、
+      // 是正すべき負債ではない。ドレイン対象ではなくフレームワークの慣用パターンとの
+      // 構造的な不一致なので、warnで様子見にせず最初からoffにする(理由をここに明記)。
+      "@typescript-eslint/no-extraneous-class": "off",
     },
   },
 );

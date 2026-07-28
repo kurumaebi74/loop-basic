@@ -29,7 +29,7 @@ Claude Code 上で「調査 → 設計 → 製造(実装) → テスト」を自
 
 ```
 CLAUDE.md                 運用マニュアル(ワークフロー・ゲートのルール)
-sample-app/                実装対象のサンプルTSフルスタックアプリ(backend=Express, frontend=Vite+React)
+sample-app/                実装対象のサンプルTSフルスタックアプリ(backend=NestJS, frontend=Vite+React)
 .claude/
   commands/                各フェーズのスラッシュコマンド定義
   agents/                  各フェーズを担当するサブエージェント定義
@@ -89,4 +89,4 @@ docs/
 
 ## サンプルアプリケーション(sample-app/)
 
-実装対象は `sample-app/`(npm workspaces, TypeScript: `backend`=Express, `frontend`=Vite+React)。「静的解析・自動チェックの考え方」「テストしやすい設計」を実地で確認するための最小構成で、詳しくは [sample-app/README.md](./sample-app/README.md) を参照。別のプロジェクトを対象にする場合は、`CLAUDE.md` の「開発・検証コマンド」セクションを該当プロジェクトのコマンドで上書きすること。
+実装対象は `sample-app/`(npm workspaces, TypeScript: `backend`=NestJS, `frontend`=Vite+React)。「静的解析・自動チェックの考え方」「テストしやすい設計」を実地で確認するための最小構成で、詳しくは [sample-app/README.md](./sample-app/README.md) を参照。別のプロジェクトを対象にする場合は、`CLAUDE.md` の「開発・検証コマンド」セクションを該当プロジェクトのコマンドで上書きすること。
