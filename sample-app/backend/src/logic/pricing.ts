@@ -1,18 +1,15 @@
-// 見積計算のロジック本体。Expressのルートハンドラ(src/index.ts)から意図的に
+// 見積計算のロジック本体。Nestのコントローラ/サービス(src/quote/)から意図的に
 // 切り離した純粋関数にしている — I/O・フレームワーク依存を持たないので、
 // サーバーを起動せずユニットテスト(pricing.test.ts)だけで検証できる。
-// loop-basic の CLAUDE.md「テストしやすい設計への切り出し」参照。
+// loop-basic の docs/memory/entries/pure-function-extraction.md 参照。
+//
+// 型は @sample-app/shared のQuoteInput/QuoteResultを使う(frontendと共有)。
+// ガード節(範囲チェック)はHTTP層のDTOバリデーション(quote-query.dto.ts)とは別に、
+// この関数がHTTP以外の文脈から呼ばれても安全なように独立して持たせている(defense in depth)。
 
-export interface QuoteInput {
-  amount: number;
-  taxRate: number;
-}
+import type { QuoteInput, QuoteResult } from "@sample-app/shared";
 
-export interface QuoteResult {
-  subtotal: number;
-  tax: number;
-  total: number;
-}
+export type { QuoteInput, QuoteResult };
 
 export function calculateQuote(input: QuoteInput): QuoteResult {
   if (input.amount < 0) {

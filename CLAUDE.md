@@ -141,13 +141,18 @@
 
 ## 開発・検証コマンド
 
-実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `backend`=NestJS, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
+実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `shared`=型定義, `backend`=NestJS, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
 
-- 型チェック: `cd sample-app && npm run typecheck`
+- 型チェック: `cd sample-app && npm run typecheck`(shared/backend/frontend すべて)
 - Lint: `cd sample-app && npm run lint`(サイズ/複雑さ/型の締め付けルールは `warn`。詳細は「静的解析・自動チェックの考え方」)
 - 自動テスト(backendの純粋関数): `cd sample-app && npm run test`
-- E2E(frontend、要 `npx playwright install chromium`): `cd sample-app && npm run test:e2e --workspace frontend`
+- ビルド: `cd sample-app && npm run build`
+- E2E(frontend+backendを自動起動、要 `npx playwright install chromium`): `cd sample-app && npm run test:e2e --workspace frontend`
 - 手動確認: API は `curl`、画面は Playwright CLI(「手動確認の使い分け」参照)
+
+同じチェックは `.github/workflows/ci.yml` がpush/PRごとにも実行する(CIは人間の直pushに対する最後の砦。「静的解析・自動チェックの考え方」の「壊れたら赤くなる」層の一部)。
+
+`backend`のAPI境界は `shared` パッケージの型(`QuoteInput`等)を実装するclass-validator製DTO(例: `quote-query.dto.ts`)で検証する。手書きの`Number()`パースに頼らない。新しいエンドポイントを追加する際もこのパターンに従うこと。
 
 新しいトピックで別のアプリケーション/言語を対象にする場合は、このセクションを該当プロジェクトのコマンドで上書きすること。
 

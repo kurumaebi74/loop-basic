@@ -15,6 +15,7 @@
 
 <!-- 例: - [file-naming](entries/file-naming.md) — ファイル名はkebab-case、コンポーネントはPascalCase -->
 - [pure-function-extraction](entries/pure-function-extraction.md) — ビジネスロジックは純粋関数に切り出し、ハンドラは薄く保つ
+- [shared-types-and-dto-validation](entries/shared-types-and-dto-validation.md) — API契約はsharedパッケージの型を唯一の情報源にし、境界はclass-validator DTOで検証する
 
 ## pitfall(既知の落とし穴・失敗から得た教訓)
 

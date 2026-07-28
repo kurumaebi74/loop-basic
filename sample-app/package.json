@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "shared",
     "backend",
     "frontend"
   ],
@@ -11,6 +12,7 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspace backend",
     "test:e2e": "npm run test:e2e --workspace frontend",
+    "build": "npm run build --workspaces --if-present",
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend"
   },

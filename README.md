@@ -29,7 +29,8 @@ Claude Code 上で「調査 → 設計 → 製造(実装) → テスト」を自
 
 ```
 CLAUDE.md                 運用マニュアル(ワークフロー・ゲートのルール)
-sample-app/                実装対象のサンプルTSフルスタックアプリ(backend=NestJS, frontend=Vite+React)
+sample-app/                実装対象のサンプルTSフルスタックアプリ(shared=型定義, backend=NestJS, frontend=Vite+React)
+.github/workflows/ci.yml   push/PRごとにtypecheck・lint・test・build・E2Eを実行するCI
 .claude/
   commands/                各フェーズのスラッシュコマンド定義
   agents/                  各フェーズを担当するサブエージェント定義
@@ -89,4 +90,10 @@ docs/
 
 ## サンプルアプリケーション(sample-app/)
 
-実装対象は `sample-app/`(npm workspaces, TypeScript: `backend`=NestJS, `frontend`=Vite+React)。「静的解析・自動チェックの考え方」「テストしやすい設計」を実地で確認するための最小構成で、詳しくは [sample-app/README.md](./sample-app/README.md) を参照。別のプロジェクトを対象にする場合は、`CLAUDE.md` の「開発・検証コマンド」セクションを該当プロジェクトのコマンドで上書きすること。
+実装対象は `sample-app/`(npm workspaces, TypeScript: `shared`=型定義, `backend`=NestJS, `frontend`=Vite+React)。「静的解析・自動チェックの考え方」「テストしやすい設計」を実地で確認するための最小構成で、詳しくは [sample-app/README.md](./sample-app/README.md) を参照。別のプロジェクトを対象にする場合は、`CLAUDE.md` の「開発・検証コマンド」セクションを該当プロジェクトのコマンドで上書きすること。
+
+frontend/backendのAPI契約は `@sample-app/shared` の型定義を唯一の情報源にし、backend側はそれを実装するclass-validator製DTOでHTTP境界を検証する(手書きパースに頼らない)。詳細は [CLAUDE.md](./CLAUDE.md) と `docs/memory/entries/shared-types-and-dto-validation.md` を参照。
+
+## CI(GitHub Actions)
+
+`.github/workflows/ci.yml` がpush/PRごとに `sample-app/` の typecheck・lint・unit test・build・Playwright E2Eを実行する。ローカルで `/test` が回すのと同じチェックを、AIエージェント経由でない変更(人間の直push等)にも適用するための最後の砦。
