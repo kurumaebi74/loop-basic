@@ -308,6 +308,7 @@
       <strong>設計直後</strong>と<strong>テスト直後</strong>の2箇所だけで人間の承認を待つ。設計・実装の完了直後にはそれぞれ
       別のサブエージェントによる自動レビュー(最大2ラウンド)も挟まる。実装フェーズは他セッションと衝突しないよう、
       トピックごとに隔離された git worktree の中で行われ、<strong>メインエージェントは自分でコードを書かず</strong>タスク分割と並列dispatchに徹する。
+      実装対象は <code class="mono">sample-app/</code>(NestJS + Vite/React、TypeScript)— 静的解析・テストの方針を実地で検証するための最小構成。
     </p>
   </header>
 
@@ -369,10 +370,10 @@
           <span class="badge review">Auto Review · 最大2ラウンド</span>
           <div class="row1"><h3>設計レビュー</h3><span class="stage-no">STAGE 03</span></div>
           <p>
-            <code class="mono">designer</code>とは別の<code class="mono">design-reviewer</code>が独立した視点で判定(<code class="mono">PASS</code> / <code class="mono">MAJOR</code>)。
-            <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。ラウンド2で残った指摘は自動でループせず、次のゲートに引き継ぐ。
+            <code class="mono">designer</code>(<code class="mono">sonnet</code>)とは<strong>別モデル(<code class="mono">opus</code>)</strong>の<code class="mono">design-reviewer</code>が独立した視点で判定(<code class="mono">PASS</code> / <code class="mono">MAJOR</code>)。同じモデルで書いてレビューすると同じ盲点をすり抜けやすいため、意図的にモデルを変えている。
+            <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。新しいLintルールの導入が絡む場合はreport-first(まずwarn)の計画になっているかもここで確認する。ラウンド2で残った指摘は自動でループせず、次のゲートに引き継ぐ。
           </p>
-          <div class="skilltags"><span class="skilltag">design-reviewer</span></div>
+          <div class="skilltags"><span class="skilltag">design-reviewer · opus</span></div>
           <div class="refs"><span class="ref file">.claude/commands/design.md</span><span class="ref">:23–31</span></div>
         </div>
       </div>
@@ -439,10 +440,11 @@
             <span class="badge review">Auto Review · 最大2ラウンド</span>
             <div class="row1"><h3>コードレビュー</h3><span class="stage-no">STAGE 06</span></div>
             <p>
-              <code class="mono">implementer</code>とは別の<code class="mono">code-reviewer</code>が設計ドキュメントと<code class="mono">git diff</code>を照らして判定。
+              <code class="mono">implementer</code>(<code class="mono">sonnet</code>)とは<strong>別モデル(<code class="mono">opus</code>)</strong>の<code class="mono">code-reviewer</code>が設計ドキュメントと<code class="mono">git diff</code>を照らして判定。
+              <strong>構成されているLint/型チェック/複雑度チェックは必ず実行し、失敗は理由を問わず<code class="mono">MAJOR</code>。</strong> 理由のないインライン抑制(<code class="mono">eslint-disable</code>相当)も<code class="mono">MAJOR</code>として指摘する。
               <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。ラウンド2で残った指摘はテストレポート経由でゲート2へ引き継ぐ。
             </p>
-            <div class="skilltags"><span class="skilltag">code-reviewer</span></div>
+            <div class="skilltags"><span class="skilltag">code-reviewer · opus</span></div>
             <div class="refs"><span class="ref file">.claude/commands/implement.md</span><span class="ref">:49–57</span></div>
           </div>
         </div>
@@ -451,7 +453,7 @@
           <div class="node"><span class="dot"></span></div>
           <div class="card">
             <div class="row1"><h3>テスト</h3><span class="stage-no">STAGE 07</span></div>
-            <p>同じワークツリー内で継続。自動テスト・型チェックに加え、無い/不十分な場合は対象に応じて手動確認する — <strong>API/バックエンドは<code class="mono">curl</code>、フロントエンドはPlaywright CLI</strong>。テストレポートもこのブランチにコミットする。</p>
+            <p>同じワークツリー内で継続。<strong>Lint/型チェックは構成されていれば必ず実行し、失敗はそのまま不合格</strong>(「あれば実行」ではない)。自動テストが無い/不十分な場合は対象に応じて手動確認する — <strong>API/バックエンドは<code class="mono">curl</code>、フロントエンドはPlaywright CLI</strong>。証跡(レスポンス・スクリーンショット)を残し、人間確認ゲートでは読むのではなく見て判断できるようにする。テストレポートもこのブランチにコミットする。</p>
             <div class="skilltags"><span class="skilltag">tester</span><span class="skilltag">docs/tests/</span></div>
             <div class="refs"><span class="ref file">.claude/commands/test.md</span><span class="ref">:8–13,17–30</span></div>
           </div>
@@ -572,6 +574,11 @@
           <tr><td class="mono">.claude/settings.json</td><td><code class="mono">worktree.baseRef: "head"</code></td></tr>
           <tr><td class="mono">docs/memory/MEMORY.md</td><td>共有メモリ索引</td></tr>
           <tr><td class="mono">docs/templates/*.md</td><td>調査・設計・テストレポートのテンプレート</td></tr>
+          <tr><td class="mono">sample-app/</td><td>実装対象の検証用サンプル(NestJS backend + Vite/React frontend, npm workspaces)</td></tr>
+          <tr><td class="mono">sample-app/eslint.config.mjs</td><td>サイズ/複雑さ/型の締め付けルール(すべてwarn導入、理由付きで<code class="mono">no-extraneous-class</code>をoff)</td></tr>
+          <tr><td class="mono">sample-app/backend/src/logic/pricing.ts</td><td>純粋関数として切り出したロジックの実例(pure-function-extraction)</td></tr>
+          <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet.md</td><td>warn→drain→error昇格の決定(decision)</td></tr>
+          <tr><td class="mono">docs/memory/entries/pure-function-extraction.md</td><td>純粋関数への切り出し規約(convention)</td></tr>
         </tbody>
       </table>
     </div>
