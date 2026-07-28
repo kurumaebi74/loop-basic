@@ -9,10 +9,12 @@
 ## decision(プロジェクト全体の技術的決定)
 
 <!-- 例: - [http-client](entries/http-client.md) — HTTP通信は全topicでfetchに統一、axiosは使わない -->
+- [eslint-strictness-ratchet](entries/eslint-strictness-ratchet.md) — sample-appのサイズ/複雑さ/型ルールはwarnで導入し、drainしてからerrorに昇格させる
 
 ## convention(命名・実装・テストの規約)
 
 <!-- 例: - [file-naming](entries/file-naming.md) — ファイル名はkebab-case、コンポーネントはPascalCase -->
+- [pure-function-extraction](entries/pure-function-extraction.md) — ビジネスロジックは純粋関数に切り出し、ハンドラは薄く保つ
 
 ## pitfall(既知の落とし穴・失敗から得た教訓)
 

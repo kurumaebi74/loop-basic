@@ -141,7 +141,15 @@
 
 ## 開発・検証コマンド
 
-このリポジトリ自体は現時点でアプリケーションコードを持たない(エージェント運用ファイルのみ)。実装対象プロジェクトが追加されたら、ここにビルド・テストコマンド(例: `npm test`, `pytest` 等)を追記すること。`/test` コマンドはこのセクションを参照して実行コマンドを決定する。
+実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `backend`=Express, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
+
+- 型チェック: `cd sample-app && npm run typecheck`
+- Lint: `cd sample-app && npm run lint`(サイズ/複雑さ/型の締め付けルールは `warn`。詳細は「静的解析・自動チェックの考え方」)
+- 自動テスト(backendの純粋関数): `cd sample-app && npm run test`
+- E2E(frontend、要 `npx playwright install chromium`): `cd sample-app && npm run test:e2e --workspace frontend`
+- 手動確認: API は `curl`、画面は Playwright CLI(「手動確認の使い分け」参照)
+
+新しいトピックで別のアプリケーション/言語を対象にする場合は、このセクションを該当プロジェクトのコマンドで上書きすること。
 
 ### 手動確認の使い分け(自動テストが無い/不十分な場合)
 
