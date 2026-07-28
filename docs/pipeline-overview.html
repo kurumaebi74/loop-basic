@@ -309,6 +309,7 @@
       別のサブエージェントによる自動レビュー(最大2ラウンド)も挟まる。実装フェーズは他セッションと衝突しないよう、
       トピックごとに隔離された git worktree の中で行われ、<strong>メインエージェントは自分でコードを書かず</strong>タスク分割と並列dispatchに徹する。
       実装対象は <code class="mono">sample-app/</code>(NestJS + Vite/React、TypeScript)— 静的解析・テストの方針を実地で検証するための最小構成。
+      frontend/backend間のAPI契約は <code class="mono">shared</code> パッケージの型を唯一の情報源にし、backend境界はDTO(class-validator)で検証する。
     </p>
   </header>
 
@@ -490,6 +491,11 @@
     </div>
 
     <div class="branch-note">
+      <span class="mark mono">CI(push時のみ)</span>
+      <span>マージはローカルの操作であり、自律ループの中で <code class="mono">origin</code> へ自動pushはしない。pushされたタイミング(人間の指示、または明示的に依頼された場合)で <code class="mono">.github/workflows/ci.yml</code> が typecheck・lint・test・build・E2Eを実行し、ここまでの自動チェックを人間の直push分にも適用する。</span>
+    </div>
+
+    <div class="branch-note">
       <span class="mark mono">修正依頼 / 設計からやり直し</span>
       <span>ワークツリーは削除せずそのまま残し、同じブランチ内で <code class="mono">/implement</code> または <code class="mono">/design</code> をやり直してから再びゲート2に戻る。新しいワークツリーは作り直さない。</span>
     </div>
@@ -574,11 +580,15 @@
           <tr><td class="mono">.claude/settings.json</td><td><code class="mono">worktree.baseRef: "head"</code></td></tr>
           <tr><td class="mono">docs/memory/MEMORY.md</td><td>共有メモリ索引</td></tr>
           <tr><td class="mono">docs/templates/*.md</td><td>調査・設計・テストレポートのテンプレート</td></tr>
-          <tr><td class="mono">sample-app/</td><td>実装対象の検証用サンプル(NestJS backend + Vite/React frontend, npm workspaces)</td></tr>
+          <tr><td class="mono">sample-app/</td><td>実装対象の検証用サンプル(shared型定義 + NestJS backend + Vite/React frontend, npm workspaces)</td></tr>
           <tr><td class="mono">sample-app/eslint.config.mjs</td><td>サイズ/複雑さ/型の締め付けルール(すべてwarn導入、理由付きで<code class="mono">no-extraneous-class</code>をoff)</td></tr>
           <tr><td class="mono">sample-app/backend/src/logic/pricing.ts</td><td>純粋関数として切り出したロジックの実例(pure-function-extraction)</td></tr>
+          <tr><td class="mono">sample-app/shared/src/</td><td>frontend/backend共有の型定義(QuoteInput/QuoteResult/HealthResponse)</td></tr>
+          <tr><td class="mono">sample-app/backend/src/quote/dto/quote-query.dto.ts</td><td>class-validatorによるHTTP境界のDTOバリデーション実例</td></tr>
+          <tr><td class="mono">.github/workflows/ci.yml</td><td>push/PRごとのtypecheck・lint・test・build・E2E(checks・e2eの2ジョブ)</td></tr>
           <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet.md</td><td>warn→drain→error昇格の決定(decision)</td></tr>
           <tr><td class="mono">docs/memory/entries/pure-function-extraction.md</td><td>純粋関数への切り出し規約(convention)</td></tr>
+          <tr><td class="mono">docs/memory/entries/shared-types-and-dto-validation.md</td><td>API契約の型共有・DTO検証の規約(convention)</td></tr>
         </tbody>
       </table>
     </div>
