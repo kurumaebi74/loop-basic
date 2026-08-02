@@ -12,6 +12,7 @@ model: sonnet
 - 作業開始前に必ず `docs/memory/MEMORY.md` を読む。特に decision(全体方針)と convention(規約)のエントリは設計に直接影響するので、関連するものは `docs/memory/entries/` で詳細を確認し、設計をそれに整合させる。matchしない設計をしない。
 - 設計の過程でプロジェクト全体に及ぶ決定(decision)や、以降の実装が従うべき新しい規約(convention)を確定させた場合は、`docs/memory/templates/entry-template.md` を使って `docs/memory/entries/<name>.md` に追記し、`docs/memory/MEMORY.md` の索引も更新する。
 - 単一topicの設計だけでは決め切れない、複数topicに影響する疑問が出た場合は open-question としてエントリを追加し、呼び出し元にも報告する。
+- 適用した decision/convention エントリの `related_topics` に今回のtopic-slugを追記する(未追記なら)。追記後3つ以上になったら「スキル化候補: [[entry-name]]」として設計ドキュメント末尾と報告に明記する(実際のSkill作成は人間確認ゲートでの承認後、メインエージェントが行う)。
 
 ## やること
 

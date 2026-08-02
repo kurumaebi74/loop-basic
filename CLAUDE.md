@@ -36,6 +36,7 @@
 4. 各フェーズの成果物は必ずファイルとして残す(口頭やチャットのみで済ませない)。次フェーズはそのファイルを読んで開始する。
 5. 調査・製造・テストのフェーズ内で致命的な不確実性(要件不明、認証情報が必要、破壊的操作が必要 等)にぶつかった場合は、そのフェーズ内であっても停止して人間に確認してよい。
 6. **`/implement` を実行しているメインエージェントは、自分でファイルを編集・作成して実装してはならない。** 必ず `TaskCreate` でタスクに分割し、`implementer` サブエージェントに委譲する。タスクが1つしかない場合も例外なく委譲する(詳細は「実装フェーズのタスク分割・並列化」節)。
+7. **スラッシュコマンド(`/cycle` 等)を使わず、自然言語で実装・修正を依頼された場合も、対象が実装対象プロジェクト(現在は `sample-app/`)のコード変更であれば、`/cycle` を実行したときと同じ手順(調査→設計→ゲート1→実装→テスト→ゲート2)を必ず起動しなければならない。** 「軽微な変更だから」「スラッシュコマンドが明示されていないから」を理由に、このフローを省略して直接ファイルを編集してはならない。対象外なのは、CLAUDE.md自体・`.claude/`・`docs/`配下の運用ルールやドキュメントに関するメタな変更で、これらは引き続き直接編集してよい(このフロー自体を変更する作業に、このフローを適用すると循環してしまうため)。
 
 ## 設計・実装のレビューループ(自動、最大2ラウンド)
 
@@ -94,6 +95,18 @@
 4. 同じ内容のエントリを重複して作らない。追加前に `MEMORY.md` を確認し、既存エントリがあれば新規作成ではなく更新(`updated` 日付の更新含む)を行う。
 5. 各成果物ドキュメント(調査・設計・テストレポート)に書くべき内容(そのtopic固有の詳細)を、共有メモリに重複して書かない。共有メモリに置くのは**そのtopicを超えて再利用される知識だけ**。
 6. 承認判断・ゲートの通過記録など、人間の意思決定そのものは各フェーズの成果物ドキュメント側(設計ドキュメント/テストレポートの「人間確認ゲート記録」欄)に残し、共有メモリには書かない。共有メモリはあくまで再利用可能な知識のためのもの。
+7. convention/pitfallエントリが人間承認を経てSkillへ昇格した場合も、エントリ自体は削除せず `status: promoted-to-skill` にして経緯を残す(ルール3の `superseded` と同じ考え方)。詳細は次項「再利用パターンのSkill化」。
+
+### 再利用パターンのSkill化
+
+`docs/memory/entries/` の convention / pitfall エントリは、同じ手順・判断が複数topicで繰り返し再利用されるうちに、単なる知識共有を超えて**再利用可能な手順(Skill)**へ格上げすべき場合がある。これを見落とさないよう、以下のフローを `/investigate`・`/design` に組み込んでいる。
+
+1. **検知**: `/investigate`・`/design`(またはそれらから委譲された `investigator`・`designer`)は、既存の convention / pitfall エントリを実際の判断材料として適用したら、そのエントリの frontmatter `related_topics` に今回のtopic-slugを追記する(まだ含まれていなければ)。
+2. **閾値**: 追記の結果 `related_topics` が**3つ以上の異なるtopic**を含むに至ったエントリは「スキル化候補」とみなす。
+3. **提案(自動判断はしない)**: スキル化候補を検知しても、その場でSkill化はしない。成果物ドキュメント(調査/設計ドキュメント)の末尾と会話の報告に「スキル化候補: [[entry-name]](related_topics N件)」として明記するに留める。
+4. **人間承認**: スキル化候補は次の人間確認ゲート(通常はゲート1)の提示内容に含め、`AskUserQuestion` で「Skill化する/しない/保留」を確認する。**人間の承認なしにSkillファイルを作成してはならない。** Skillは特定のtopicに閉じず全セッションの挙動に恒久的に影響するため、既存の人間確認ゲートと同じ重みで扱う。
+5. **作成**: 承認が得られたら、メインエージェントが `.claude/skills/<skill-name>/SKILL.md` を作成する(frontmatterに `name`・`description` を含む簡潔なSkill定義)。元になった手順は該当topicの調査/設計/実装ドキュメントを参照しつつ、特定topicの詳細に依存しない形へ汎用化して記述する。
+6. **記録**: 作成後、元になった `docs/memory/entries/<name>.md` の `status` を `promoted-to-skill` にし、新しいSkillファイルへのパスを追記する。`docs/memory/MEMORY.md` の該当行にもSkill化済みである旨を追記する。
 
 ## 調査フェーズの並列化(ファンアウト)
 
@@ -144,7 +157,7 @@
 実装対象プロジェクトは `sample-app/`(TypeScript, npm workspaces: `shared`=型定義, `backend`=NestJS, `frontend`=Vite+React)。静的解析・テスト運用方針(次節以降)を実地で確認するための最小構成で、詳細は `sample-app/README.md` を参照。`/test` は以下のコマンドを実行する。
 
 - 型チェック: `cd sample-app && npm run typecheck`(shared/backend/frontend すべて)
-- Lint: `cd sample-app && npm run lint`(サイズ/複雑さ/型の締め付けルールは `warn`。詳細は「静的解析・自動チェックの考え方」)
+- Lint: `cd sample-app && npm run lint`(サイズ/複雑さ/型/`sonarjs`/`security`/フォーマット(`prettier`)のルールは全て`error`まで昇格済み。詳細は「静的解析・自動チェックの考え方」)
 - 自動テスト(backendの純粋関数): `cd sample-app && npm run test`
 - ビルド: `cd sample-app && npm run build`
 - E2E(frontend+backendを自動起動、要 `npx playwright install chromium`): `cd sample-app && npm run test:e2e --workspace frontend`

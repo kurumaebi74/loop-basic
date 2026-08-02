@@ -7,7 +7,7 @@ argument-hint: [topic]
 
 ## 手順
 
-1. `docs/memory/MEMORY.md` を読む。特に decision(全体方針)・convention(規約)は設計に直接影響するため、関連するものは `docs/memory/entries/` の詳細も確認し、設計をそれらと整合させる。
+1. `docs/memory/MEMORY.md` を読む。特に decision(全体方針)・convention(規約)は設計に直接影響するため、関連するものは `docs/memory/entries/` の詳細も確認し、設計をそれらと整合させる。**適用したconvention/pitfallエントリの `related_topics` に今回のtopic-slugを追記する**(まだ含まれていなければ)。追記の結果3つ以上の異なるtopicを含むに至ったら「スキル化候補」として控える(手順7・人間確認ゲートで報告する)。
 2. `docs/investigations/` から対象トピックに対応する最新の調査ドキュメントを読む。存在しない場合は先に `/investigate` の実行を提案して停止する。
 3. `docs/templates/design-template.md` を読み、テンプレート構成を把握する。
 4. 調査結果と共有メモリを踏まえて設計を行う。最低限、以下を含める。
@@ -19,6 +19,7 @@ argument-hint: [topic]
    - リスク・トレードオフ・ロールバック方針
 5. `docs/designs/YYYY-MM-DD-<topic-slug>.md` に保存する(調査ドキュメントと同じslugを使う)。
 6. この設計でプロジェクト全体に及ぶ決定(decision)や新しい規約(convention)を確定させた場合は、`docs/memory/entries/` に追記し `docs/memory/MEMORY.md` を更新する。複数topicに影響する未解決の疑問が残る場合は open-question として記録する。
+7. 手順1で「スキル化候補」を控えた場合、設計ドキュメントの末尾に「スキル化候補: [[entry-name]](related_topics N件)」と明記する。この時点ではSkillファイルを作成せず、後述の人間確認ゲートで可否を確認する。
 
 ## 設計レビュー(必須・自動、最大2ラウンド)
 
@@ -37,6 +38,8 @@ argument-hint: [topic]
 - 承認 — このまま `/implement` に進んでよい
 - 修正依頼 — 設計のどこを直すべきか具体的にフィードバックをもらい、設計をやり直す
 - 差し戻し — 調査自体が不十分。`/investigate` からやり直す
+
+**スキル化候補が控えられている場合**(手順1・7)、この人間確認ゲートで設計の承認可否と合わせて、候補ごとに「Skill化する/しない/保留」も確認する(同じ `AskUserQuestion` 呼び出し内の追加設問でよい)。承認が得られた候補のみ、メインエージェントが `.claude/skills/<skill-name>/SKILL.md` を作成し、元の `docs/memory/entries/<name>.md` の `status` を `promoted-to-skill` に更新して `docs/memory/MEMORY.md` にも反映する(詳細はCLAUDE.mdの「再利用パターンのSkill化」)。
 
 **承認が得られるまで `/implement` を実行してはならない。** これはこのプロジェクトで最も重要なルールの一つである。承認以外の回答を得た場合は、フィードバックを反映して設計を修正し、再度このゲートを提示する。
 

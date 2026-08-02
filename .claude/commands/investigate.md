@@ -9,7 +9,7 @@ argument-hint: [topic]
 
 ## 手順
 
-1. `docs/memory/MEMORY.md` を読み、既存の decision / pitfall / glossary で関連するものがあれば `docs/memory/entries/` の詳細も確認する。
+1. `docs/memory/MEMORY.md` を読み、既存の decision / pitfall / glossary で関連するものがあれば `docs/memory/entries/` の詳細も確認する。**convention/pitfallエントリを実際に調査の判断材料として適用した場合、そのエントリの frontmatter `related_topics` に今回のtopic-slugを追記する**(まだ含まれていなければ)。追記の結果 `related_topics` が3つ以上の異なるtopicを含むに至ったら「スキル化候補」として控えておく(手順6で報告する。詳細はCLAUDE.mdの「再利用パターンのSkill化」)。
 2. `docs/templates/investigation-template.md` を読み、テンプレート構成を把握する。
 3. **トピックが分解できるか判断する。** トピックの中に、互いの結果を待たずに独立して調べられる観点が2つ以上あるか確認する(例:「ライブラリ選定」と「既存アーキテクチャとの整合性」と「パフォーマンス制約」)。観点同士が強く依存する場合(片方の結論がもう片方の調べ方を左右する)や、観点が実質1つしかない場合は分解しない。分解する場合も観点は2〜4個程度に留める。多すぎると統合コストが調査コストを上回る。
 
@@ -40,12 +40,13 @@ argument-hint: [topic]
    - 推奨アプローチとその理由
    - 未解決の疑問・要確認事項(あれば)
    - 3bの場合: 各観点の作業ファイル(`_parts/...`)へのリンク
-6. topicを超えて再利用できる知識(decision/pitfall/glossary)を得た場合は、`docs/memory/templates/entry-template.md` を使って `docs/memory/entries/` に追記し、`docs/memory/MEMORY.md` の索引を更新する。**3bの場合、これは各investigatorではなくorchestrator(このメインの会話)が行う。** 各investigatorから返された「メモリ候補」を集約し、重複・矛盾を解消してから1回で書き込む。
+6. topicを超えて再利用できる知識(decision/pitfall/glossary)を得た場合は、`docs/memory/templates/entry-template.md` を使って `docs/memory/entries/` に追記し、`docs/memory/MEMORY.md` の索引を更新する。**3bの場合、これは各investigatorではなくorchestrator(このメインの会話)が行う。** 各investigatorから返された「メモリ候補」を集約し、重複・矛盾を解消してから1回で書き込む。手順1でスキル化候補が見つかった場合は、Skillファイルをここで作成せず、調査ドキュメントの末尾と会話への報告に「スキル化候補: [[entry-name]](related_topics N件)」として明記するに留める(実際の作成は次の `/design` の人間確認ゲートで承認を得てから)。
 
 ## 完了条件
 
 - `docs/investigations/` に調査ドキュメントが保存されていること
 - ドキュメントの末尾に「次のアクション: `/design` で設計フェーズに進む」という一文を含めること
+- スキル化候補(手順1・6)があれば、ドキュメント末尾と会話への報告にその旨が明記されていること
 
 ## 注意
 
