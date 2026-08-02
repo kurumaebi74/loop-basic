@@ -9,7 +9,8 @@
 ## decision(プロジェクト全体の技術的決定)
 
 <!-- 例: - [http-client](entries/http-client.md) — HTTP通信は全topicでfetchに統一、axiosは使わない -->
-- [eslint-strictness-ratchet](entries/eslint-strictness-ratchet.md) — sample-appのサイズ/複雑さ/型ルールはwarnで導入し、drainしてからerrorに昇格させる
+- [eslint-strictness-ratchet](entries/eslint-strictness-ratchet.md) — (superseded, [[eslint-strictness-ratchet-v2]]参照) sample-appのサイズ/複雑さ/型ルールはwarnで導入し、drainしてからerrorに昇格させる
+- [eslint-strictness-ratchet-v2](entries/eslint-strictness-ratchet-v2.md) — sample-appのサイズ/複雑さ/型/sonarjs/security/prettierルールはdrain確認済みで全てerrorに昇格済み(既存コード修正不要)
 
 ## convention(命名・実装・テストの規約)
 

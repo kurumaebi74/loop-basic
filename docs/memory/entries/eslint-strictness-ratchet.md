@@ -1,11 +1,13 @@
 ---
 name: eslint-strictness-ratchet
 type: decision
-status: active
+status: superseded
 related_topics: []
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-08-01
 ---
+
+**superseded:** 2026-08-01、対象コードの指摘がゼロであることを確認した上で `error` に昇格した。以降は [[eslint-strictness-ratchet-v2]] を参照。
 
 `sample-app/eslint.config.mjs` のサイズ・複雑さ・型の締め付けルール(`max-lines-per-function`, `complexity`, `max-depth`, `@typescript-eslint/no-explicit-any`, `@typescript-eslint/no-non-null-assertion`)は、**すべて `warn`(非ブロッキング)で導入する。** `error` に昇格させる前に、対象コードでの指摘件数をゼロまで drain すること。
 
