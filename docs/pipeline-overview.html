@@ -543,12 +543,39 @@
     <div class="refs" style="margin-top:0.9rem;"><span class="ref file">.claude/commands/investigate.md</span><span class="ref">:14,28–32,36,43</span></div>
   </section>
 
+  <section aria-labelledby="s-skill">
+    <div class="section-head"><span class="idx">05</span><h2 id="s-skill">再利用パターンのSkill化</h2></div>
+    <p class="section-note">
+      convention/pitfallエントリが3つ以上の異なるtopicで再利用されたら、単なる知識共有を超えて手順(Skill)へ格上げする候補として扱う。
+      <strong>自動では作成しない</strong> — 検知から作成まで、必ず人間承認を挟む。
+    </p>
+    <ol class="steps">
+      <li><strong>検知</strong> — convention/pitfallエントリを適用するたび、<code class="mono">related_topics</code> に今回のtopic-slugを追記する</li>
+      <li><strong>閾値</strong> — <code class="mono">related_topics</code> が3つ以上の異なるtopicに達したら「スキル化候補」</li>
+      <li><strong>提案のみ</strong> — その場ではSkill化せず、成果物ドキュメントの末尾と報告に候補として明記する</li>
+      <li><strong>人間承認</strong> — 次の人間確認ゲート(通常ゲート1)で <code class="mono">AskUserQuestion</code> により「Skill化する/しない/保留」を確認する</li>
+      <li><strong>作成</strong> — 承認された候補のみ、メインエージェントが <code class="mono">.claude/skills/&lt;name&gt;/SKILL.md</code> を作成する</li>
+      <li><strong>記録</strong> — 元のメモリエントリは削除せず <code class="mono">status: promoted-to-skill</code> にし、<code class="mono">MEMORY.md</code> にも反映する</li>
+    </ol>
+    <div class="refs" style="margin-top:0.9rem;"><span class="ref">CLAUDE.md:再利用パターンのSkill化</span><span class="ref file">.claude/commands/design.md</span></div>
+  </section>
+
   <div class="principle">
     <span class="mark">MUST</span>
     <p>
       ゲート1・ゲート2を通過する前に、次のフェーズへ<strong>自動的に進んではならない</strong>。承認は必ず
       <code class="mono">AskUserQuestion</code>で明示的な選択肢として取得し、曖昧な確認で済ませない。
       <span class="mono-ref">CLAUDE.md:27–31(厳守ルール)</span>
+    </p>
+  </div>
+
+  <div class="principle" style="margin-top:1rem;">
+    <span class="mark">MUST</span>
+    <p>
+      スラッシュコマンドを使わず<strong>自然言語で実装・修正を依頼された場合</strong>も、対象が実装対象プロジェクトのコード変更であれば
+      <code class="mono">/cycle</code> と同じ全工程(調査→設計→ゲート1→実装→テスト→ゲート2)を起動しなければならない。「軽微だから」を理由に
+      直接ファイルを編集して済ませてはならない(CLAUDE.md自体・<code class="mono">.claude/</code>・<code class="mono">docs/</code>配下の運用ルールのメタ変更は対象外)。
+      <span class="mono-ref">CLAUDE.md:厳守ルール7</span>
     </p>
   </div>
 
@@ -567,7 +594,7 @@
       <table>
         <thead><tr><th>ファイル</th><th>役割</th></tr></thead>
         <tbody>
-          <tr><td class="mono">CLAUDE.md</td><td>運用マニュアル本体(ワークフロー全体・ゲート・レビューループ・タスク分割並列化・共有メモリ・ファンアウト・ワークツリー分離)</td></tr>
+          <tr><td class="mono">CLAUDE.md</td><td>運用マニュアル本体(ワークフロー全体・厳守ルール7項目・レビューループ・タスク分割並列化・共有メモリ・Skill化フロー・ファンアウト・ワークツリー分離)</td></tr>
           <tr><td class="mono">.claude/commands/investigate.md</td><td>調査コマンド(ファンアウト手順含む)</td></tr>
           <tr><td class="mono">.claude/commands/design.md</td><td>設計コマンド(ゲート1)</td></tr>
           <tr><td class="mono">.claude/commands/implement.md</td><td>実装コマンド(ワークツリー作成・タスク分割/並列dispatch・コードレビュー)</td></tr>
@@ -579,6 +606,7 @@
           <tr><td class="mono">.claude/agents/investigator.md ほか2種</td><td>調査・テストの各サブエージェント定義</td></tr>
           <tr><td class="mono">.claude/settings.json</td><td><code class="mono">worktree.baseRef: "head"</code></td></tr>
           <tr><td class="mono">docs/memory/MEMORY.md</td><td>共有メモリ索引</td></tr>
+          <tr><td class="mono">docs/memory/templates/entry-template.md</td><td>メモリエントリのテンプレート。<code class="mono">related_topics</code>でのスキル化候補追跡、<code class="mono">status</code>の3値(active/superseded/promoted-to-skill)を定義</td></tr>
           <tr><td class="mono">docs/templates/*.md</td><td>調査・設計・テストレポートのテンプレート</td></tr>
           <tr><td class="mono">sample-app/</td><td>実装対象の検証用サンプル(shared型定義 + NestJS backend + Vite/React frontend, npm workspaces)</td></tr>
           <tr><td class="mono">sample-app/eslint.config.mjs</td><td>サイズ/複雑さ/型/<code class="mono">sonarjs</code>/<code class="mono">security</code>ルール全てを<code class="mono">error</code>(ブロッキング)に昇格済み。<code class="mono">eslint-plugin-prettier/recommended</code>でフォーマットもlintに統合。理由付きで<code class="mono">no-extraneous-class</code>をoff、<code class="mono">no-unused-vars</code>に<code class="mono">ignoreRestSiblings</code>、テストファイルはサイズ/ネスト系ルールをoff</td></tr>
