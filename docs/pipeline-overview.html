@@ -581,12 +581,14 @@
           <tr><td class="mono">docs/memory/MEMORY.md</td><td>共有メモリ索引</td></tr>
           <tr><td class="mono">docs/templates/*.md</td><td>調査・設計・テストレポートのテンプレート</td></tr>
           <tr><td class="mono">sample-app/</td><td>実装対象の検証用サンプル(shared型定義 + NestJS backend + Vite/React frontend, npm workspaces)</td></tr>
-          <tr><td class="mono">sample-app/eslint.config.mjs</td><td>サイズ/複雑さ/型の締め付けルール(すべてwarn導入、理由付きで<code class="mono">no-extraneous-class</code>をoff)</td></tr>
+          <tr><td class="mono">sample-app/eslint.config.mjs</td><td>サイズ/複雑さ/型/<code class="mono">sonarjs</code>/<code class="mono">security</code>ルール全てを<code class="mono">error</code>(ブロッキング)に昇格済み。<code class="mono">eslint-plugin-prettier/recommended</code>でフォーマットもlintに統合。理由付きで<code class="mono">no-extraneous-class</code>をoff、<code class="mono">no-unused-vars</code>に<code class="mono">ignoreRestSiblings</code>、テストファイルはサイズ/ネスト系ルールをoff</td></tr>
+          <tr><td class="mono">sample-app/.prettierrc</td><td>フォーマット設定(<code class="mono">printWidth: 160</code>)</td></tr>
           <tr><td class="mono">sample-app/backend/src/logic/pricing.ts</td><td>純粋関数として切り出したロジックの実例(pure-function-extraction)</td></tr>
           <tr><td class="mono">sample-app/shared/src/</td><td>frontend/backend共有の型定義(QuoteInput/QuoteResult/HealthResponse)</td></tr>
           <tr><td class="mono">sample-app/backend/src/quote/dto/quote-query.dto.ts</td><td>class-validatorによるHTTP境界のDTOバリデーション実例</td></tr>
           <tr><td class="mono">.github/workflows/ci.yml</td><td>push/PRごとのtypecheck・lint・test・build・E2E(checks・e2eの2ジョブ)</td></tr>
-          <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet.md</td><td>warn→drain→error昇格の決定(decision)</td></tr>
+          <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet.md</td><td>warn→drain→error昇格の当初方針(decision、<code class="mono">status: superseded</code> →後継は下記v2)</td></tr>
+          <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet-v2.md</td><td>サイズ/複雑さ/型/sonarjs/security/prettierの全ルールをdrain確認の上errorへ昇格した記録(decision)</td></tr>
           <tr><td class="mono">docs/memory/entries/pure-function-extraction.md</td><td>純粋関数への切り出し規約(convention)</td></tr>
           <tr><td class="mono">docs/memory/entries/shared-types-and-dto-validation.md</td><td>API契約の型共有・DTO検証の規約(convention)</td></tr>
         </tbody>
