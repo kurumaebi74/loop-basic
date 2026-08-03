@@ -306,8 +306,9 @@
     <p class="lede">
       1トピックについて <code class="mono">/investigate</code> から <code class="mono">/test</code> までを自律的に進めながら、
       <strong>設計直後</strong>と<strong>テスト直後</strong>の2箇所だけで人間の承認を待つ。設計・実装の完了直後にはそれぞれ
-      別のサブエージェントによる自動レビュー(最大2ラウンド)も挟まる。実装フェーズは他セッションと衝突しないよう、
-      トピックごとに隔離された git worktree の中で行われ、<strong>メインエージェントは自分でコードを書かず</strong>タスク分割と並列dispatchに徹する。
+      別のサブエージェントによる自動レビュー(最大2ラウンド)も挟まる。<strong>調査開始の時点で</strong>トピックごとに隔離された
+      git worktree(既定ブランチ <code class="mono">main</code>、指定があれば別ブランチ)に入り、設計・実装・テストまで同じワークツリーを使い続けるため、
+      他セッションと衝突しない。実装フェーズでは<strong>メインエージェントは自分でコードを書かず</strong>タスク分割と並列dispatchに徹する。
       実装対象は <code class="mono">sample-app/</code>(NestJS + Vite/React、TypeScript)— 静的解析・テストの方針を実地で検証するための最小構成。
       frontend/backend間のAPI契約は <code class="mono">shared</code> パッケージの型を唯一の情報源にし、backend境界はDTO(class-validator)で検証する。
     </p>
@@ -337,79 +338,72 @@
   </section>
 
   <section aria-labelledby="s-main">
-    <div class="section-head"><span class="idx">01</span><h2 id="s-main">メインパイプライン(ベースブランチ上)</h2></div>
-    <p class="section-note">調査と設計はまだワークツリーを分けず、通常の作業ディレクトリで直接ファイルを書く。破線の丸ノードは人間を介さない自動レビュー、ひし形は人間確認ゲート。</p>
-
-    <div class="pipeline">
-
-      <div class="stage">
-        <div class="node"><span class="dot"></span></div>
-        <div class="card">
-          <div class="row1"><h3>調査</h3><span class="stage-no">STAGE 01</span></div>
-          <p>
-            共有メモリを読んでから調査。トピックが独立した複数観点に分解できる場合は
-            <code class="mono">investigator</code> を並列dispatchするファンアウトも選べる(詳細は §04)。
-          </p>
-          <div class="skilltags"><span class="skilltag">investigator</span><span class="skilltag">docs/memory/MEMORY.md</span></div>
-          <div class="refs"><span class="ref file">.claude/commands/investigate.md</span><span class="ref">:12,14,43</span></div>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="node"><span class="dot"></span></div>
-        <div class="card">
-          <div class="row1"><h3>設計</h3><span class="stage-no">STAGE 02</span></div>
-          <p>調査結果と共有メモリの decision / convention を踏まえて設計書を作成。<strong>テスト戦略で自動テストを新規作成するか(する/しない+理由)を必ず明示</strong>し、「する」ならテスト作成も実装ステップに含める。プロジェクト横断の決定はここで共有メモリに書き戻す。</p>
-          <div class="skilltags"><span class="skilltag">designer</span><span class="skilltag">docs/designs/</span></div>
-          <div class="refs"><span class="ref file">.claude/commands/design.md</span><span class="ref">:10,20,21</span></div>
-        </div>
-      </div>
-
-      <div class="stage review">
-        <div class="node"><span class="dot"></span></div>
-        <div class="card">
-          <span class="badge review">Auto Review · 最大2ラウンド</span>
-          <div class="row1"><h3>設計レビュー</h3><span class="stage-no">STAGE 03</span></div>
-          <p>
-            <code class="mono">designer</code>(<code class="mono">sonnet</code>)とは<strong>別モデル(<code class="mono">opus</code>)</strong>の<code class="mono">design-reviewer</code>が独立した視点で判定(<code class="mono">PASS</code> / <code class="mono">MAJOR</code>)。同じモデルで書いてレビューすると同じ盲点をすり抜けやすいため、意図的にモデルを変えている。
-            <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。新しいLintルールの導入が絡む場合はreport-first(まずwarn)の計画になっているかもここで確認する。ラウンド2で残った指摘は自動でループせず、次のゲートに引き継ぐ。
-          </p>
-          <div class="skilltags"><span class="skilltag">design-reviewer · opus</span></div>
-          <div class="refs"><span class="ref file">.claude/commands/design.md</span><span class="ref">:23–31</span></div>
-        </div>
-      </div>
-
-      <div class="stage gate">
-        <div class="node"><span class="dot"></span></div>
-        <div class="card">
-          <span class="badge gate">Gate 1</span>
-          <div class="row1"><h3>人間確認ゲート</h3><span class="stage-no">STAGE 04</span></div>
-          <p><strong>承認 / 修正依頼 / 差し戻し</strong> の3択を<code class="mono">AskUserQuestion</code>で提示。設計レビューで未解決の<code class="mono">MAJOR</code>があればここで併せて提示する。承認が得られるまで実装へは進めない。判断結果は承認・却下を問わず毎回「人間確認ゲート記録」に1行追加する(この行数が差し戻し回数のカウントになる)。</p>
-          <div class="refs"><span class="ref">design.md:33–43</span><span class="ref">CLAUDE.md:29</span></div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <section aria-labelledby="s-worktree">
-    <div class="section-head"><span class="idx">02</span><h2 id="s-worktree">実装フェーズ — トピック専用ワークツリー</h2></div>
+    <div class="section-head"><span class="idx">01</span><h2 id="s-main">パイプライン全体 — トピック専用ワークツリー内</h2></div>
     <p class="section-note">
-      複数セッションが同じリポジトリを同時に修正する前提のため、コード変更を伴う実装・テストだけは隔離されたブランチの中で行う。
-      実装ステップはさらに <code class="mono">TaskCreate</code> でタスクに分解され、独立したタスクは <code class="mono">implementer</code> へ並列dispatchされる。
+      複数セッションが同じリポジトリを同時に修正する前提のため、<strong>調査開始の時点でトピック専用のgit worktreeに入り</strong>、設計・実装・テストまで同じワークツリーを使い続ける
+      (以前は調査・設計だけベースブランチ直書きだったが、複数セッションが別topicを同時に調査すると <code class="mono">docs/memory/MEMORY.md</code> 等の共有ファイルが競合しうるため統一した)。
+      破線の丸ノードは人間を介さない自動レビュー、ひし形は人間確認ゲート。
     </p>
 
     <div class="worktree-scope">
-      <span class="badge scope">git worktree で分離</span>
-      <div class="scope-meta">EnterWorktree(name: &lt;topic-slug&gt;) · 分岐元 = ローカルHEAD(worktree.baseRef: "head")</div>
+      <span class="badge scope">git worktree で分離(調査開始時に作成)</span>
+      <div class="scope-meta">EnterWorktree(name: &lt;topic-slug&gt;) · 分岐元 = ベースブランチ(既定 main、指定があれば別ブランチ)のHEAD(worktree.baseRef: "head")</div>
 
       <div class="pipeline">
 
         <div class="stage">
           <div class="node"><span class="dot"></span></div>
           <div class="card">
+            <div class="row1"><h3>調査</h3><span class="stage-no">STAGE 01</span></div>
+            <p>
+              ベースブランチ側で目的のブランチ(既定 <code class="mono">main</code>)をチェックアウトしてから <code class="mono">EnterWorktree</code> でこのワークツリーに入り、調査を始める。
+              共有メモリを読んでから調査。トピックが独立した複数観点に分解できる場合は
+              <code class="mono">investigator</code> を並列dispatchするファンアウトも選べる(詳細は §03)。
+            </p>
+            <div class="skilltags"><span class="skilltag">investigator</span><span class="skilltag">docs/memory/MEMORY.md</span></div>
+            <div class="refs"><span class="ref file">.claude/commands/investigate.md</span><span class="ref">:10–17(ワークツリー),21</span></div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="node"><span class="dot"></span></div>
+          <div class="card">
+            <div class="row1"><h3>設計</h3><span class="stage-no">STAGE 02</span></div>
+            <p>同じワークツリー内で継続(再度 <code class="mono">EnterWorktree</code> で新規作成はしない)。調査結果と共有メモリの decision / convention を踏まえて設計書を作成。<strong>テスト戦略で自動テストを新規作成するか(する/しない+理由)を必ず明示</strong>し、「する」ならテスト作成も実装ステップに含める。プロジェクト横断の決定はここで共有メモリに書き戻す。</p>
+            <div class="skilltags"><span class="skilltag">designer</span><span class="skilltag">docs/designs/</span></div>
+            <div class="refs"><span class="ref file">.claude/commands/design.md</span><span class="ref">:8–13(ワークツリー),17,20</span></div>
+          </div>
+        </div>
+
+        <div class="stage review">
+          <div class="node"><span class="dot"></span></div>
+          <div class="card">
+            <span class="badge review">Auto Review · 最大2ラウンド</span>
+            <div class="row1"><h3>設計レビュー</h3><span class="stage-no">STAGE 03</span></div>
+            <p>
+              <code class="mono">designer</code>(<code class="mono">sonnet</code>)とは<strong>別モデル(<code class="mono">opus</code>)</strong>の<code class="mono">design-reviewer</code>が独立した視点で判定(<code class="mono">PASS</code> / <code class="mono">MAJOR</code>)。同じモデルで書いてレビューすると同じ盲点をすり抜けやすいため、意図的にモデルを変えている。
+              <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。新しいLintルールの導入が絡む場合はreport-first(まずwarn)の計画になっているかもここで確認する。ラウンド2で残った指摘は自動でループせず、次のゲートに引き継ぐ。
+            </p>
+            <div class="skilltags"><span class="skilltag">design-reviewer · opus</span></div>
+            <div class="refs"><span class="ref file">.claude/commands/design.md</span><span class="ref">:31–39</span></div>
+          </div>
+        </div>
+
+        <div class="stage gate">
+          <div class="node"><span class="dot"></span></div>
+          <div class="card">
+            <span class="badge gate">Gate 1</span>
+            <div class="row1"><h3>人間確認ゲート</h3><span class="stage-no">STAGE 04</span></div>
+            <p><strong>承認 / 修正依頼 / 差し戻し</strong> の3択を<code class="mono">AskUserQuestion</code>で提示。設計レビューで未解決の<code class="mono">MAJOR</code>、およびスキル化候補(§04)があればここで併せて提示する。承認が得られるまで実装へは進めない。判断結果は承認・却下を問わず毎回「人間確認ゲート記録」に1行追加する(この行数が差し戻し回数のカウントになる)。</p>
+            <div class="refs"><span class="ref">design.md:41–53</span><span class="ref">CLAUDE.md:33</span></div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="node"><span class="dot"></span></div>
+          <div class="card">
             <div class="row1"><h3>実装 — タスク分割と並列dispatch</h3><span class="stage-no">STAGE 05</span></div>
-            <p><strong>メインエージェントはコードを1行も書かない。</strong> 設計の実装ステップを <code class="mono">TaskCreate</code> でタスク化し、ファイルが重ならず依存もないタスクだけを並列化する。</p>
+            <p><strong>メインエージェントはコードを1行も書かない。</strong> 同じワークツリー内で継続。設計の実装ステップを <code class="mono">TaskCreate</code> でタスク化し、ファイルが重ならず依存もないタスクだけを並列化する。</p>
 
             <div class="task-board">
               <div class="example-label">例 — subjectは必ず [&lt;topic-slug&gt;] で始める(タスクは複数トピックで1つのリストを共有するため)</div>
@@ -431,7 +425,7 @@
             </div>
 
             <div class="skilltags"><span class="skilltag">TaskCreate</span><span class="skilltag">TaskUpdate</span><span class="skilltag">implementer ×N</span></div>
-            <div class="refs"><span class="ref file">.claude/commands/implement.md</span><span class="ref">:8,26–38</span></div>
+            <div class="refs"><span class="ref file">.claude/commands/implement.md</span><span class="ref">:15–22(ワークツリー確認),28–36</span></div>
           </div>
         </div>
 
@@ -446,7 +440,7 @@
               <code class="mono">MAJOR</code>なら修正して再レビュー、最大2ラウンドまで。ラウンド2で残った指摘はテストレポート経由でゲート2へ引き継ぐ。
             </p>
             <div class="skilltags"><span class="skilltag">code-reviewer · opus</span></div>
-            <div class="refs"><span class="ref file">.claude/commands/implement.md</span><span class="ref">:49–57</span></div>
+            <div class="refs"><span class="ref file">.claude/commands/implement.md</span><span class="ref">:47–56</span></div>
           </div>
         </div>
 
@@ -517,7 +511,7 @@
   </section>
 
   <section aria-labelledby="s-memory">
-    <div class="section-head"><span class="idx">03</span><h2 id="s-memory">共有メモリ — フェーズをまたぐ長期記憶</h2></div>
+    <div class="section-head"><span class="idx">02</span><h2 id="s-memory">共有メモリ — フェーズをまたぐ長期記憶</h2></div>
     <p class="section-note">
       サブエージェントは毎回独立したコンテキストで起動されるため、<code class="mono">docs/memory/MEMORY.md</code> を索引として読み書きする。
       並列実行中のサブエージェントは直接書き込まず「メモリ候補」として報告し、全員完了後にorchestratorがまとめて1回で反映する。
@@ -529,11 +523,11 @@
       <div class="memcard"><span class="kind">glossary</span><p>プロジェクト固有の用語定義</p></div>
       <div class="memcard"><span class="kind">open-question</span><p>複数topicに影響する未解決の疑問</p></div>
     </div>
-    <div class="refs" style="margin-top:0.9rem;"><span class="ref">CLAUDE.md:60–64</span><span class="ref file">docs/memory/MEMORY.md</span></div>
+    <div class="refs" style="margin-top:0.9rem;"><span class="ref">CLAUDE.md:82–88</span><span class="ref file">docs/memory/MEMORY.md</span></div>
   </section>
 
   <section aria-labelledby="s-fanout">
-    <div class="section-head"><span class="idx">04</span><h2 id="s-fanout">調査の並列化(ファンアウト)</h2></div>
+    <div class="section-head"><span class="idx">03</span><h2 id="s-fanout">調査の並列化(ファンアウト)</h2></div>
     <ol class="steps">
       <li><strong>分解条件</strong> — 互いに依存せず独立して調べられる観点が2〜4個ある場合のみ分解する</li>
       <li><strong>出力先を明示</strong> — 観点ごとに <code class="mono">docs/investigations/_parts/&lt;topic-slug&gt;/&lt;sub-slug&gt;.md</code> を指定し、investigator自身には決めさせない</li>
@@ -544,7 +538,7 @@
   </section>
 
   <section aria-labelledby="s-skill">
-    <div class="section-head"><span class="idx">05</span><h2 id="s-skill">再利用パターンのSkill化</h2></div>
+    <div class="section-head"><span class="idx">04</span><h2 id="s-skill">再利用パターンのSkill化</h2></div>
     <p class="section-note">
       convention/pitfallエントリが3つ以上の異なるtopicで再利用されたら、単なる知識共有を超えて手順(Skill)へ格上げする候補として扱う。
       <strong>自動では作成しない</strong> — 検知から作成まで、必ず人間承認を挟む。
@@ -582,10 +576,10 @@
   <div class="limits">
     <span class="mark">既知の制限</span>
     <ul>
-      <li><code class="mono">/investigate</code>・<code class="mono">/design</code> はワークツリー化されていない。複数セッションが同時に <code class="mono">docs/memory/MEMORY.md</code> を書き換えると競合しうる。</li>
-      <li>複数トピックのブランチが同時にベースブランチへマージされる場合、共有ファイルでマージコンフリクトが起きうる。この場合も自動解決せず人間に報告する。</li>
+      <li>あるトピックのワークツリーは、<strong>作成された時点</strong>のベースブランチの状態(特に <code class="mono">docs/memory/</code>)を引き継ぐ。作成後にベースブランチへマージされた他トピックの決定・規約は自動反映されない(通常の git worktree の性質上の制限)。長時間かかるトピックでは、途中でベースブランチの最新を取り込むべきか判断してよい。</li>
+      <li>複数トピックのブランチが同時にベースブランチへマージされる場合、<code class="mono">docs/memory/MEMORY.md</code> など共有ファイルでマージコンフリクトが起きうる。この場合も自動解決せず人間に報告する。</li>
     </ul>
-    <div class="refs" style="margin-top:0.8rem;border-top-color:color-mix(in srgb, var(--gate) 35%, var(--line));"><span class="ref">CLAUDE.md:96–101</span></div>
+    <div class="refs" style="margin-top:0.8rem;border-top-color:color-mix(in srgb, var(--gate) 35%, var(--line));"><span class="ref">CLAUDE.md:134–137</span></div>
   </div>
 
   <footer>
@@ -595,16 +589,16 @@
         <thead><tr><th>ファイル</th><th>役割</th></tr></thead>
         <tbody>
           <tr><td class="mono">CLAUDE.md</td><td>運用マニュアル本体(ワークフロー全体・厳守ルール7項目・レビューループ・タスク分割並列化・共有メモリ・Skill化フロー・ファンアウト・ワークツリー分離)</td></tr>
-          <tr><td class="mono">.claude/commands/investigate.md</td><td>調査コマンド(ファンアウト手順含む)</td></tr>
-          <tr><td class="mono">.claude/commands/design.md</td><td>設計コマンド(ゲート1)</td></tr>
-          <tr><td class="mono">.claude/commands/implement.md</td><td>実装コマンド(ワークツリー作成・タスク分割/並列dispatch・コードレビュー)</td></tr>
+          <tr><td class="mono">.claude/commands/investigate.md</td><td>調査コマンド(ワークツリー作成・ファンアウト手順含む)</td></tr>
+          <tr><td class="mono">.claude/commands/design.md</td><td>設計コマンド(既存ワークツリーの確認・ゲート1)</td></tr>
+          <tr><td class="mono">.claude/commands/implement.md</td><td>実装コマンド(既存ワークツリーの確認・タスク分割/並列dispatch・コードレビュー)</td></tr>
           <tr><td class="mono">.claude/commands/test.md</td><td>テストコマンド(ゲート2・マージ処理)</td></tr>
           <tr><td class="mono">.claude/commands/cycle.md</td><td>通し実行オーケストレーター</td></tr>
           <tr><td class="mono">.claude/agents/design-reviewer.md</td><td>設計レビュー専任サブエージェント(自分では書き直さない)</td></tr>
           <tr><td class="mono">.claude/agents/code-reviewer.md</td><td>コードレビュー専任サブエージェント(自分では修正しない)</td></tr>
           <tr><td class="mono">.claude/agents/implementer.md</td><td>単一タスクだけを実装するサブエージェント。並列時は自分でコミット・メモリ書き込みをしない</td></tr>
           <tr><td class="mono">.claude/agents/investigator.md ほか2種</td><td>調査・テストの各サブエージェント定義</td></tr>
-          <tr><td class="mono">.claude/settings.json</td><td><code class="mono">worktree.baseRef: "head"</code></td></tr>
+          <tr><td class="mono">.claude/settings.json</td><td><code class="mono">worktree.baseRef: "head"</code>(調査開始前にベースブランチ側で目的のブランチへcheckoutしてから<code class="mono">EnterWorktree</code>する運用と組み合わせて、main/ユーザー指定ブランチからの分岐を実現)</td></tr>
           <tr><td class="mono">docs/memory/MEMORY.md</td><td>共有メモリ索引</td></tr>
           <tr><td class="mono">docs/memory/templates/entry-template.md</td><td>メモリエントリのテンプレート。<code class="mono">related_topics</code>でのスキル化候補追跡、<code class="mono">status</code>の3値(active/superseded/promoted-to-skill)を定義</td></tr>
           <tr><td class="mono">docs/templates/*.md</td><td>調査・設計・テストレポートのテンプレート</td></tr>
