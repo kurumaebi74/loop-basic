@@ -1,5 +1,29 @@
 {
   "worktree": {
     "baseRef": "head"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *sample-app/*|*.github/workflows/*) case \"$PWD\" in */.claude/worktrees/*) exit 0 ;; *) echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"sample-app/ and CI config changes must happen inside a topic worktree (.claude/worktrees/<topic-slug>). Run /investigate or /cycle for this topic instead of editing directly (CLAUDE.md rule 6/7).\\\"}}\"; exit 0 ;; esac ;; *) exit 0 ;; esac",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); case \"$cmd\" in *\"git commit\"*) case \"$PWD\" in */.claude/worktrees/*) exit 0 ;; *) staged=$(git diff --cached --name-only 2>/dev/null | grep -E '^(sample-app/|\\.github/workflows/)' || true); if [ -n \"$staged\" ]; then echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"Staged changes include sample-app/ or CI files but this is not a topic worktree. Implementation commits must happen inside .claude/worktrees/<topic-slug> (CLAUDE.md rule 6/7).\\\"}}\"; fi ;; esac ;; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
