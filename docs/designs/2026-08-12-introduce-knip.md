@@ -8,45 +8,46 @@
 
 ## ツール制約に関する注記(重要)
 
-この設計書は、調査ドキュメントで「未解決の疑問」として挙げられていた `npx knip` の実地試し打ちを、**designerサブエージェントの利用可能ツールにBashが含まれていなかったため実行できなかった**上で作成している。代わりに、`sample-app` 配下の全関連ソース(`package.json`各種、`tsconfig.*`、`nest-cli.json`、`eslint.config.mjs`、`shared`/`backend`/`frontend`の全TS/TSXファイル、`vite.config.ts`、`playwright.config.ts`、`.github/workflows/ci.yml`)を実際に読み、import/exportグラフを手動でトレースして誤検知の可能性を評価した。以下の`knip.json`案はこの静的読解に基づく最有力案だが、**実装ステップ1を「実際に `npx knip` を実行して仮説を検証・調整する」ステップとして必須化**することで、調査ドキュメントが求めていた「試し打ち」を実装フェーズの最初に確実に行わせる設計にしている。implementerはこのステップの結果次第で、本設計の`knip.json`案を(スコープの範囲内で)微調整してよい。
+この設計書は、調査ドキュメントで「未解決の疑問」として挙げられていた `npx knip` の実地試し打ちを、**designerサブエージェントの利用可能ツールにBashが含まれていなかったため実行できなかった**上で作成している。代わりに、`sample-app` 配下の全関連ソース(`package.json`各種、`tsconfig.*`、`nest-cli.json`、`eslint.config.mjs`、`shared`/`backend`/`frontend`の全TS/TSXファイル、`vite.config.ts`、`playwright.config.ts`、`.github/workflows/ci.yml`)を実際に読み、import/exportグラフを手動でトレースして誤検知の可能性を評価した。以下の`knip.jsonc`案はこの静的読解に基づく最有力案だが、**実装ステップ1を「実際に `npx knip` を実行して仮説を検証・調整する」ステップとして必須化**することで、調査ドキュメントが求めていた「試し打ち」を実装フェーズの最初に確実に行わせる設計にしている。implementerはこのステップの結果次第で、本設計の`knip.jsonc`案を(スコープの範囲内で)微調整してよい。
 
 ## 目的・スコープ
 
 ### やること
 
 - `sample-app` に Knip を **レポートのみ・非ブロッキング** で導入する(CLAUDE.md「静的解析・自動チェックの考え方」の「重複コード検出・デッドコード検出は、導入するならまずレポートのみから始める」方針に従う)。
-- `sample-app/knip.json` を新規作成し、npm workspaces(`shared`/`backend`/`frontend`)構成に合わせたentry/project/ignore設定を行う。
-- `sample-app/package.json` に `knip`・`knip:report` の npm script と `knip` devDependencyを追加する。
+- `sample-app/knip.jsonc` を新規作成し、npm workspaces(`shared`/`backend`/`frontend`)構成に合わせたentry/project/ignore設定を行う。
+- `sample-app/package.json` に `knip`・`knip:report` の npm script と `knip` devDependency(バージョン範囲 `^5.0.0`)を追加する。
 - `.github/workflows/ci.yml` に、既存の `checks`/`e2e` ジョブとは独立した非ブロッキングな `knip` ジョブを追加する。
-- 導入時点で実際に `npx knip` を実行し、明白な誤検知があれば `knip.json` の `ignore`/`ignoreDependencies`/`entry` で調整する(理由をコメントで残す)。
+- 導入時点で実際に `npx knip` を実行し、誤検知(false positive)は `knip.jsonc` の `ignore`/`ignoreDependencies`/`entry` で調整し理由をコメントで残す。真陽性(true positive)は抑制せずレポートの指摘として残す(詳細はステップ1参照。指摘0件は完了条件ではない)。
 - 決定事項を共有メモリの新規decisionエントリとして記録する。
 
 ### やらないこと(スコープ外)
 
 - Knipの指摘をブロッキング化する(`error`扱いにする、CI必須チェックにする)判断。今回はレポートのみに留め、将来のratchet判断は別topicに委ねる。
 - PRコメント投稿等のサードパーティAction連携(調査の選択肢D)。今回は選択肢Bのみ採用する。
-- 既存コードの「デッドコード」自体の削除・リファクタリング。Knipが指摘を出しても、レポートを見るだけに留め、コード変更はしない(誤検知調整のための`knip.json`側の変更は除く)。
+- 既存コードの「デッドコード」自体の削除・リファクタリング。Knipが指摘を出しても、レポートを見るだけに留め、コード変更はしない(誤検知調整のための`knip.jsonc`側の変更は除く)。
 - `eslint.config.mjs` 側のルール変更。Knipとは独立したツールであり、ESLintの `sonarjs`/`security` 設定等には手を入れない。
+- **Knipの指摘を `/test` の合否判定や `code-reviewer` の判定材料として使うこと。** Knipはreport-only運用であり、CLAUDE.mdの「構成されているチェックは必須で実行する…失敗はそのまま不合格/MAJORの理由になる」という原則が前提とする"ブロッキング(error)まで昇格したチェック"には該当しないため、本設計で明示的にスコープ外とする(詳細は「テスト戦略」節の注記)。
 
 ## アーキテクチャ・変更概要
 
 | ファイル | 変更内容 |
 | --- | --- |
-| `sample-app/knip.json`(新規) | npm workspaces構成に合わせたKnip設定。下記「knip.json案」参照。 |
-| `sample-app/package.json` | `devDependencies` に `knip` を追加。`scripts` に `knip`・`knip:report` を追加。 |
+| `sample-app/knip.jsonc`(新規) | npm workspaces構成に合わせたKnip設定。下記「knip.jsonc案」参照。 |
+| `sample-app/package.json` | `devDependencies` に `knip`(バージョン範囲 `^5.0.0`)を追加。`scripts` に `knip`・`knip:report` を追加。 |
 | `sample-app/package-lock.json` | `npm install` により自動更新(implementerが `npm install` 実行時に反映)。 |
 | `.github/workflows/ci.yml` | 独立した `knip` ジョブを新設(`continue-on-error: true`、`needs`なし、既存 `checks`/`e2e` ジョブには一切手を入れない)。 |
-| `sample-app/README.md` | 「実行方法」「この構成が示している方針」に一行ずつKnipの説明を追記(任意・低優先度、CIの合否には影響しない)。 |
-| `docs/memory/entries/knip-dead-code-detection.md`(新規) | 本トピックの決定を記録するdecisionエントリ。 |
-| `docs/memory/entries/eslint-strictness-ratchet-v2.md` | `related_topics` に `introduce-knip` を追記。 |
-| `docs/memory/MEMORY.md` | decisionセクションに新規エントリへのリンクを1行追加。 |
+| `sample-app/README.md` | 「実行方法」「この構成が示している方針」への追記(**必須**。Knipがreport-only運用であり`/test`の合否・`code-reviewer`の判定材料に使わない旨も含める。詳細はステップ4)。 |
+| `docs/memory/entries/knip-dead-code-detection.md`(新規) | 本トピックの決定を記録するdecisionエントリ。**designerが設計時に作成済み。implementerの対応は不要。** |
+| `docs/memory/entries/eslint-strictness-ratchet-v2.md` | `related_topics` に `introduce-knip` を追記。**designerが設計時に追記済み。implementerの対応は不要。** |
+| `docs/memory/MEMORY.md` | decisionセクションに新規エントリへのリンクを1行追加。**designerが設計時に追記済み。implementerの対応は不要。** |
 
-### `knip.json` 案
+### `knip.jsonc` 案
 
 ```jsonc
-// sample-app/knip.json
+// sample-app/knip.jsonc
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   "workspaces": {
     ".": {
       // ルート直下にアプリのソースはないが、eslint.config.mjs がルートの
@@ -65,8 +66,8 @@
     },
     "backend": {
       // main.ts → app.module.ts → 各Controller/Serviceの依存グラフが起点。
-      // *.test.ts は既定でもKnipのテストファイルパターンに含まれる想定だが、
-      // entry上書きによる意図しない除外を避けるため明示的に加えておく。
+      // vite: false(下記)にするとVite/Vitestプラグイン既定のテストentry検出が
+      // 失われるため、*.test.ts を明示的にentryへ加えておく。
       "entry": ["src/main.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts"],
       // backendは vitest をテストランナーとしてのみ使用し、Viteバンドラは使わない
@@ -84,13 +85,16 @@
       // index.html → src/main.tsx のエントリ解決をKnipが自動で辿れるかは未検証のため
       // 明示。playwright.config.ts・e2e/**.spec.ts もentryに含め、
       // Playwrightのテストコードを「未使用ファイル」として誤検知しないようにする。
+      // entryに含めたconfigファイルはprojectのサブセットになるよう、
+      // vite.config.ts / playwright.config.ts をprojectにも明示的に含める。
       "entry": ["src/main.tsx", "vite.config.ts", "playwright.config.ts", "e2e/**/*.spec.ts"],
-      "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"]
+      "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts", "vite.config.ts", "playwright.config.ts"]
     }
   },
   // ESLintの ignores (eslint.config.mjs) と揃える。ビルド・テスト成果物を
-  // 解析対象に含めると誤検知・実行時間増の原因になる。
-  "ignore": ["**/dist/**", "**/coverage/**", "**/playwright-report/**", "**/test-results/**"]
+  // 解析対象に含めると誤検知・実行時間増の原因になる(node_modules自体はKnipが
+  // 既定でも除外するが、ESLintのignoresとの対応関係を明示するため揃えて記載する)。
+  "ignore": ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/playwright-report/**", "**/test-results/**"]
 }
 ```
 
@@ -104,20 +108,36 @@
 
 実装順に並んだチェックリスト。`/implement` はこの順序で着手する。
 
-- [ ] ステップ1(必須・最優先・試し打ち): `sample-app/package.json` に `knip` をdevDependencyとして追加し `npm install`(sample-appルートで実行)。上記の `knip.json` 案を `sample-app/knip.json` として作成し、`cd sample-app && npx knip` を実行する。出力を確認し、以下を検証する:
-  - `shared`/`backend`/`frontend` で unused files / unused exports が0件か。0件でなければ、指摘内容が「上記補足に書いた既知の使用箇所」を誤検知しているのか、それとも実際にコードから追跡できていないだけの誤検知なのかを判断し、`entry`/`project`/`ignore` で個別に対処する(コード自体は変更しない)。
-  - `backend` の `ignoreDependencies`(`@nestjs/platform-express`・`rxjs`)が実際に指摘されるか確認する。指摘されない場合は `ignoreDependencies` エントリを削除してよい(不要な抑制を残さない)。
-  - `backend` で `vite: false` により Vite/Vitest プラグイン関連のノイズが出ていないか確認する。
-  - `"."`(ルートワークスペース)の `eslint`/`eslint-config-prettier`/`eslint-plugin-prettier`/`eslint-plugin-security`/`eslint-plugin-sonarjs`/`prettier`/`typescript-eslint` が unused dependencies として誤検知されないか確認する。誤検知されれば `ignoreDependencies` に追加する。
-  - `@sample-app/shared` へのワークスペース間参照が unresolved / unused と誤判定されないか確認する。
-  - 上記調整はすべて `knip.json` 側で行い、理由をコメントとして残す(CLAUDE.mdの「例外はインラインではなく設定ファイルに理由付きで書く」方針に従う)。ブロッキング化は行わない(exit codeを気にする必要はないが、指摘内容そのものは正確に保つ)。
+- [ ] ステップ1(必須・最優先・試し打ち): ローカル環境のNodeバージョンが `v20.19.0` 以上であることを `node -v` で確認する(CIは`node-version: 22`のため問題ないが、ローカル実行環境でも確認しておく)。`sample-app/package.json` に `knip` をdevDependency(バージョン範囲 `^5.0.0`)として追加し `npm install`(sample-appルートで実行)。上記の `knip.jsonc` 案を `sample-app/knip.jsonc` として作成し、`cd sample-app && npx knip` を実行する。出力を確認し、**指摘0件は完了条件ではない**ことを前提に、指摘ごとに以下の3分岐で判断する:
+  - **(a) 誤検知(false positive)と判断できる場合**: 「上記補足に書いた既知の使用箇所」と矛盾する、またはKnipが追跡し損ねているだけと判断できる場合は、`knip.jsonc` 側の `entry`/`project`/`ignore`/`ignoreDependencies` で個別に調整し、理由をコメントとして残す(コード自体は変更しない)。
+  - **(b) 真陽性(true positive)、つまり実際に未使用と判断できる場合**: `knip.jsonc` 側で抑制しない。指摘としてそのまま残し、レポートに現れる状態を維持する(このステップではコードの削除・リファクタリングは行わない。スコープ外)。
+  - **(c) 誤検知か真陽性か判断がつかない場合**: 抑制せず保留する(不確実な状態のまま握りつぶさない)。判断材料が今後増えた時点で別途対応する。
+  - 具体的に確認する項目:
+    - `backend` の `ignoreDependencies`(`@nestjs/platform-express`・`rxjs`)が実際に指摘されるか確認する。指摘されない場合は `ignoreDependencies` エントリを削除してよい(不要な抑制を残さない)。
+    - `backend` で `vite: false` により Vite/Vitest プラグイン関連のノイズが出ていないか確認する。
+    - `"."`(ルートワークスペース)の `eslint`/`eslint-config-prettier`/`eslint-plugin-prettier`/`eslint-plugin-security`/`eslint-plugin-sonarjs`/`prettier`/`typescript-eslint`/`typescript` が unused dependencies として誤検知されないか確認する(ルートには`tsconfig.json`がなく`tsconfig.base.json`のみのため、`typescript`は特に誤検知されやすい)。誤検知されれば `ignoreDependencies` に追加する。
+    - `@sample-app/shared` へのワークスペース間参照が unresolved / unused と誤判定されないか確認する。
+  - 上記調整はすべて `knip.jsonc` 側で行い、理由をコメントとして残す(CLAUDE.mdの「例外はインラインではなく設定ファイルに理由付きで書く」方針に従う)。ブロッキング化は行わない(exit codeを気にする必要はないが、指摘内容そのものは正確に保つ)。
+  - 実行結果を、下記「ステップ1 試し打ち結果」節に記録する。これはステップ1の完了条件の一部である。
 - [ ] ステップ2: `sample-app/package.json` の `scripts` に以下を追加する。
   - `"knip": "knip"`(ローカルで通常のexit codeのまま実行する版。手元で今すぐ直したい時に使う)
   - `"knip:report": "knip --no-exit-code"`(CIから呼ぶ、常にexit code 0で終わる版)
 - [ ] ステップ3: `.github/workflows/ci.yml` に、既存の `checks`・`e2e` ジョブとは独立した `knip` ジョブを追加する(下記「CI組み込み案」参照)。既存2ジョブの内容には一切手を加えない。
-- [ ] ステップ4(任意・低優先度): `sample-app/README.md` の「実行方法」に `npm run knip:report` の一行、「この構成が示している方針」に「デッドコード・未使用依存の検出(Knip)もレポートのみ・非ブロッキングから始める」旨の一行を追記する。CIの合否には影響しないため、時間が無ければ省略可。
+- [ ] ステップ4(必須): `sample-app/README.md` の「実行方法」に `npm run knip:report` の一行、「この構成が示している方針」に「デッドコード・未使用依存の検出(Knip)もレポートのみ・非ブロッキングから始める」旨の一行を追記する。あわせて、**Knipの指摘は `/test` の合否判定にも `code-reviewer` の判定材料にも使わないこと**(report-only運用であるため)を明記する一文を追加する(本設計の「やらないこと」節・「テスト戦略」節の決定を、実装対象のドキュメントにも反映する)。
 - [ ] ステップ5: ローカルで `cd sample-app && npm run typecheck && npm run lint && npm run test && npm run build` が今までどおり通ることを確認する(Knip導入が既存チェックに影響しないことの確認)。
-- [ ] ステップ6: `git add -A && git status` で意図した差分のみが含まれることを確認してからコミットする。
+- [ ] ステップ6: `git add -A && git status` で意図した差分のみが含まれることを確認する。**このステップの範囲はここまで(差分確認のみ)。実際の `git commit` はimplementerではなく、メインエージェントがタスク完了報告を受けてから行う**(CLAUDE.mdの「実装フェーズのタスク分割・並列化」節: 並列dispatch中のimplementerは自分でコミットしない)。
+
+### ステップ1 試し打ち結果(実装時に記入)
+
+実装ステップ1の完了条件の一部として、`npx knip` 実行結果の概要をimplementerがここに記録する。
+
+| 項目 | 内容 |
+| --- | --- |
+| 実行日時 / knipバージョン | (記入) |
+| 総指摘件数 | (記入) |
+| (a) 誤検知として `knip.jsonc` 側で調整した件数と内訳 | (記入) |
+| (b) 真陽性としてレポートに残した件数と内訳 | (記入) |
+| (c) 判断保留として残した件数と内訳 | (記入) |
 
 ### CI組み込み案
 
@@ -152,20 +172,28 @@
 
 ## テスト戦略
 
-- 何をもって「完了」とするか: (a) `sample-app/knip.json` が存在し `npx knip` がエラーなく完走する(exit codeによらず、ツール自体がクラッシュしないこと)、(b) `npm run knip`・`npm run knip:report` がそれぞれ想定どおりのexit code(前者は指摘があれば非0、後者は常に0)で動く、(c) 既存の `npm run typecheck`/`lint`/`test`/`build` がKnip導入前後で結果が変わらない(影響を与えない)、(d) CIに追加した `knip` ジョブが `continue-on-error: true` のもとで、指摘の有無に関わらずワークフロー全体の成否に影響しないこと。
+- 何をもって「完了」とするか:
+  - (a) `sample-app/knip.jsonc` が存在し `npx knip` がエラーなく完走する(exit codeによらず、ツール自体がクラッシュしないこと)。
+  - (b) `npm run knip`・`npm run knip:report` がそれぞれ想定どおりのexit code(前者は指摘があれば非0、後者は常に0)で動く。
+  - (c) 既存の `npm run typecheck`/`lint`/`test`/`build` がKnip導入前後で結果が変わらない(影響を与えない)。
+  - (d) `.github/workflows/ci.yml` がYAMLとして正しくパースでき、追加した `knip` ジョブの定義に `continue-on-error: true` が設定されており、かつ `needs` キーが存在しない(既存の `checks`/`e2e` ジョブと依存関係がない)ことをローカルで確認できること。
+
+  **注記(Knipの指摘を合否基準に含めない理由)**: 上記(a)〜(d)のいずれの完了基準にも、Knipの**指摘件数・内容そのもの**は含めない。`npx knip`/`npm run knip` が指摘を返すこと自体を `/test` の不合格理由にも `code-reviewer` の `MAJOR` 判定材料にもしない。CLAUDE.mdの「構成されているチェックは必須で実行する…失敗はそのまま不合格/MAJORの理由になる」という原則は、`error`(ブロッキング)まで昇格したチェックを対象にしたものであり、本設計で明示的にreport-only・非ブロッキング運用と定めたKnipはこの原則の対象外とする(この決定はステップ4でREADMEにも明記し、`docs/memory/entries/knip-dead-code-detection.md` にも記録する)。
+
 - 手動確認手順(CLAUDE.md「手動確認の使い分け」に従う。今回はAPI/UIの変更ではなくCI設定・ツール導入のため、該当する既存カテゴリに厳密には当てはまらないが、最も近い「バッチ処理・スクリプト等」の扱いとして直接コマンド実行で確認する):
   1. `cd sample-app && npx knip` を実行し、出力(指摘件数・内容)を確認する。
   2. `cd sample-app && npm run knip:report; echo "exit=$?"` を実行し、`exit=0` になることを確認する(指摘があってもCIで落ちないことのローカル再現)。
-  3. `.github/workflows/ci.yml` の構文が壊れていないことを、実際にpush/PRを作成してGitHub Actions上で `knip` ジョブが実行され、`checks`・`e2e` ジョブとは独立して(worst caseで指摘が大量に出ても)ワークフロー全体が成功扱いになることを確認する。
+  3. `.github/workflows/ci.yml` をYAMLとして構文チェックする(例: リポジトリルートで `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` を実行、あるいはエディタ/`actionlint`等のYAML lintでも可)。あわせて、追加した `knip` ジョブの定義に `continue-on-error: true` があり `needs` キーが存在しないことを目視で確認する。
+  4. **(事後確認。`/test`フェーズの完了基準には含めない)**: ゲート2承認後にベースブランチへマージされ、次のCIが実行された際に、`knip` ジョブが `checks`・`e2e` ジョブとは独立して実行され、指摘の有無に関わらずワークフロー全体が成功扱いになることを確認する。このプロジェクトの運用ではトピックブランチはpush/PR作成をせずローカルで`git merge`されるため(`ci.yml`のトリガーは`push: [main]`/`pull_request`のみ)、`/test`フェーズの時点では実CI実行を検証できない。この確認は分離し、事後確認として扱う。
 
 **自動テストを新規作成するか:** しない(理由: 今回の変更は静的解析ツール(Knip)自体の導入とCI設定変更であり、sample-appのアプリケーションコード・ビジネスロジックには一切変更がない。検証対象は「Knipが正しく実行され、非ブロッキングであること」というCI設定・ツール実行の振る舞いそのものであり、これは既存の自動テストスイート(vitest/Playwright)が検証する対象外。テスト戦略の(a)〜(d)は、既存のCI実行自体(`checks`/`e2e`/新設`knip`ジョブが実際にpush/PRごとに動く)が動作確認を兼ねており、これに加えて上記の手動確認手順でローカルからも再現確認する。新たにvitest/Playwrightのテストケースを追加する対象がない)。
 
 ## リスク・トレードオフ
 
-- **誤検知によるレポートの形骸化**: `knip.json` の設定不備で誤検知が多発すると、「レポートを見る」行為自体が無視されるようになるリスクがある。実装ステップ1で試し打ちし、明白な誤検知は個別に潰すことで軽減する。ただし全ての誤検知を導入初日に潰しきる保証はなく、継続的な調整が必要になる可能性がある。
+- **誤検知によるレポートの形骸化**: `knip.jsonc` の設定不備で誤検知が多発すると、「レポートを見る」行為自体が無視されるようになるリスクがある。実装ステップ1で試し打ちし、明白な誤検知は個別に潰すことで軽減する。ただし全ての誤検知を導入初日に潰しきる保証はなく、継続的な調整が必要になる可能性がある。
 - **可視性の低さ(選択肢Bの本質的なトレードオフ)**: PRコメント等の能動的な通知(選択肢D)を採用しないため、CIログを能動的に見に行かない限り指摘に気づかれない。今回はスコープ外としたが、Knipのレポートが継続的に無視される状況が続く場合、将来PRコメント連携や `report → error` ratchetへの昇格を再検討する価値がある。
 - **CI実行時間の増加**: 新規ジョブ1つ分、CI全体の総実行時間はわずかに増える(`checks`/`e2e`とは独立ジョブのため、並列実行され全体のクリティカルパスへの影響は小さい想定)。
-- **Knipのバージョン追従**: `knip.json` の `$schema` は `knip@5` の範囲を指すのみでパッチバージョンを固定しない。将来のKnipのマイナー/メジャーアップデートで検出ロジックが変わり、指摘内容が増減する可能性があるが、非ブロッキング運用のため実害は小さい。
+- **Knipのバージョン追従**: `knip.jsonc` の `$schema` は `knip@5` の範囲を指すのみでパッチバージョンを固定しない。`package.json` の devDependency も `^5.0.0` という範囲指定に留める。将来のKnipのマイナー/メジャーアップデートで検出ロジックが変わり、指摘内容が増減する可能性があるが、非ブロッキング運用のため実害は小さい。
 - **`ignoreDependencies`/`vite: false` 等の抑制が将来の実コード変更で陳腐化するリスク**: 例えば将来backendが本当にViteを使い始めた場合、`vite: false` が誤って有効なチェックを抑制し続ける可能性がある。抑制項目にはコメントで理由を明記しているため、将来のtopicで気づいた際に見直せるようにしてある。
 
 ## ロールバック方針
@@ -173,7 +201,7 @@
 非ブロッキングな追加のみのため、ロールバックは低リスク・低コスト。問題が起きた場合(例: CI実行時間の許容できない増加、`--no-exit-code`/`continue-on-error` の二重設定にもかかわらず何らかの理由でCIがブロックされる不具合等)は以下の手順で切り戻す:
 
 1. `.github/workflows/ci.yml` から `knip` ジョブを削除する。
-2. `sample-app/knip.json` を削除する。
+2. `sample-app/knip.jsonc` を削除する。
 3. `sample-app/package.json` から `knip`・`knip:report` scriptと `knip` devDependencyを削除し、`npm install` でlockファイルを更新する。
 4. `sample-app/README.md` に追記していた場合は該当行を削除する。
 5. 共有メモリの `knip-dead-code-detection` エントリは削除せず、`status: superseded` にして経緯を残す(CLAUDE.mdの記憶運用ルールに従う)。
@@ -192,10 +220,18 @@
 
 | ラウンド | 判定 | 主な指摘 |
 | --- | --- | --- |
-| 1 | (レビュー未実施) | |
+| 1 | MAJOR | M1: 実装ステップ1が「指摘0件」を目標にし、真陽性まで`ignore`で抑制させる誘導になっている(真陽性は抑制せず残す分岐＋試し打ち結果の記録を追加すべき)。M2: Knipのバージョン未指定で`$schema`(v5前提)と実インストール版が不整合になり得る。M3: 非ブロッキング性がCIでしか担保されておらず、`npm run knip`(exit≠0)がCLAUDE.mdの「構成されたチェックの失敗=不合格」により`/test`・`code-reviewer`で事実上ブロッキング化し得る(README追記の必須化＋合否に使わない旨の明記が必要)。M4: 完了基準(d)/手動確認3がトピックブランチのpush・PR作成を前提としており`/test`フェーズで検証不能(ローカル検証可能な基準へ置換し、実CI確認はマージ後に分離)。MINOR: メモリ関連3件が変更表にあるが実装ステップにない(designer実施済みの明記)、knip.jsonのコメントはknip.jsonc+schema-jsonc.jsonが安全、ステップ6のコミットはimplementerではなくメインエージェントの担当、ステップ4「省略可」の曖昧さ、`vite:false`とテストentry既定の根拠矛盾、ルート依存チェックに`typescript`漏れ(ルートは`tsconfig.base.json`のみ)、entryがprojectのサブセットでない、ignoreのnode_modules不一致、調査ドキュメントの相互リンク未更新。 |
 | 2(ラウンド1がMAJORの場合のみ) | | |
 
 未解決のMAJORが残った場合: (なければ「なし」)
+
+### ラウンド1指摘への対応メモ(designer記入)
+
+- **M1**: 実装ステップ1の判断基準を「誤検知(a)/真陽性(b)/判断不能(c)」の3分岐に書き直し、「指摘0件は完了条件ではない」ことを明記した。真陽性は`knip.jsonc`側で抑制せずレポートに残す、判断不能も保留してそのまま残すよう指示を追加した。あわせて「ステップ1 試し打ち結果」節を新設し、指摘件数・内訳・対処の記録をステップ1の完了条件に含めた。
+- **M2**: `package.json`へのdevDependency追加時のバージョン範囲を `^5.0.0` に明記した(「やること」「変更概要」表「ステップ1」「リスク」の各所)。Node実行要件(v20.19+)の確認をステップ1の冒頭に追加した。
+- **M3**: 「やらないこと」節と「テスト戦略」節に、Knipの指摘を`/test`の合否・`code-reviewer`の判定材料に使わないことを明記した決定を追加した。README追記(ステップ4)を任意から必須に格上げし、この決定をREADMEにも明記する一文を追加した。`docs/memory/entries/knip-dead-code-detection.md`にも同趣旨を追記した(別途反映)。
+- **M4**: テスト戦略の完了基準(d)を、実CI実行の確認からローカルで検証可能な内容(YAML構文の妥当性、`knip`ジョブの`continue-on-error: true`と`needs`なしの設定確認)に置き換えた。手動確認手順3も同様に修正し、実際のCI実行確認は「事後確認」として手順4に分離し、`/test`フェーズの完了基準から明確に除外した。
+- **MINOR**: 変更概要の表にあるメモリ関連3件に「designerが設計時に実施済み・implementerは対応不要」の注記を追加。`knip.json`を`knip.jsonc`(+`schema-jsonc.json`)に変更し、ドキュメント内の参照箇所も全て更新。ステップ6を「差分確認まで(コミットはメインエージェントが行う)」に修正。ステップ4の「時間が無ければ省略可」を削除し必須化。`vite: false`のコメントの因果を「vite:falseにするとテストentry既定検出が失われるため明示的に加える」という正しい向きに修正。ルートワークスペースの依存チェック確認項目に`typescript`を追加。frontendの`project`に`vite.config.ts`/`playwright.config.ts`を含め、`entry`がその部分集合になるよう修正。`ignore`に`**/node_modules/**`を追加しコメントを実態に合わせた。調査ドキュメントの相互リンクを本設計ドキュメントへのリンクに更新した(別ファイルで対応)。
 
 ## コードレビュー結果
 
@@ -213,3 +249,4 @@
 | 日時 | 判断 | コメント |
 | --- | --- | --- |
 |  | 承認 / 修正依頼 / 差し戻し |  |
+</content>

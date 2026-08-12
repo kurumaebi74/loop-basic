@@ -2,7 +2,7 @@
 
 - 日付: 2026-08-12
 - ステータス: 完了
-- 関連する設計ドキュメント: (作成後にリンクを追記)
+- 関連する設計ドキュメント: [docs/designs/2026-08-12-introduce-knip.md](../designs/2026-08-12-introduce-knip.md)
 
 ## 背景・目的
 
@@ -141,3 +141,4 @@ Knipはpackage-based monorepo(npm/pnpm/yarn workspaces)をネイティブにサ�
 
 ---
 次のアクション: `/design` で設計フェーズに進む
+</content>
