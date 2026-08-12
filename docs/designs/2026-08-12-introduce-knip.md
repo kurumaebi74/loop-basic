@@ -106,7 +106,7 @@
 
 ## 実装ステップ
 
-実装順に並んだチェックリスト。`/implement` はこの順序で着手する。
+実装順に並んだチェックリスト。`/implement` はこの順序で着手する。**ステップ1とステップ2はいずれも `sample-app/package.json` を変更する(ステップ1は`knip`devDependency追加、ステップ2はnpm script追加)ため、`/implement`が`TaskCreate`でタスク分割する際は`addBlockedBy`等で依存関係を明示し順序化すること(同一ファイルを変更する複数タスクは並列化不可というCLAUDE.mdの方針に従う)。**
 
 - [ ] ステップ1(必須・最優先・試し打ち): ローカル環境のNodeバージョンが `v20.19.0` 以上であることを `node -v` で確認する(CIは`node-version: 22`のため問題ないが、ローカル実行環境でも確認しておく)。`sample-app/package.json` に `knip` をdevDependency(バージョン範囲 `^5.0.0`)として追加し `npm install`(sample-appルートで実行)。上記の `knip.jsonc` 案を `sample-app/knip.jsonc` として作成し、`cd sample-app && npx knip` を実行する。出力を確認し、**指摘0件は完了条件ではない**ことを前提に、指摘ごとに以下の3分岐で判断する:
   - **(a) 誤検知(false positive)と判断できる場合**: 「上記補足に書いた既知の使用箇所」と矛盾する、またはKnipが追跡し損ねているだけと判断できる場合は、`knip.jsonc` 側の `entry`/`project`/`ignore`/`ignoreDependencies` で個別に調整し、理由をコメントとして残す(コード自体は変更しない)。
@@ -114,8 +114,9 @@
   - **(c) 誤検知か真陽性か判断がつかない場合**: 抑制せず保留する(不確実な状態のまま握りつぶさない)。判断材料が今後増えた時点で別途対応する。
   - 具体的に確認する項目:
     - `backend` の `ignoreDependencies`(`@nestjs/platform-express`・`rxjs`)が実際に指摘されるか確認する。指摘されない場合は `ignoreDependencies` エントリを削除してよい(不要な抑制を残さない)。
-    - `backend` で `vite: false` により Vite/Vitest プラグイン関連のノイズが出ていないか確認する。
+    - `backend` で `vite: false` により Vite/Vitest プラグイン関連のノイズが出ていないか確認する。Knip 5では`vite`プラグインと`vitest`プラグインが別々に有効化される可能性があるため、`vitest`プラグインの有効/無効も含めて実際の挙動を確認し、`vite: false`が意図通り機能しているか、あるいは`vitest: false`も別途必要か確認する。`ignoreDependencies`と同様、効果がなければ`vite: false`エントリを削除してよい(不要な設定を残さない)。
     - `"."`(ルートワークスペース)の `eslint`/`eslint-config-prettier`/`eslint-plugin-prettier`/`eslint-plugin-security`/`eslint-plugin-sonarjs`/`prettier`/`typescript-eslint`/`typescript` が unused dependencies として誤検知されないか確認する(ルートには`tsconfig.json`がなく`tsconfig.base.json`のみのため、`typescript`は特に誤検知されやすい)。誤検知されれば `ignoreDependencies` に追加する。
+    - ルートワークスペースで `npx knip` 実行時に型解決関連の警告が出ないか確認する。`@types/node` は `backend` のみのdevDependencyであり、ルート・`shared`・`frontend`には存在しない(ルートは`typescript`のみ)。Knip公式は`knip`+`typescript`+`@types/node`の同時導入を前提にしているため、この非対称な構成が警告の原因にならないか確認し、必要であれば対応を検討する(対応が必要な場合の具体策は実行結果を見てから判断する)。
     - `@sample-app/shared` へのワークスペース間参照が unresolved / unused と誤判定されないか確認する。
   - 上記調整はすべて `knip.jsonc` 側で行い、理由をコメントとして残す(CLAUDE.mdの「例外はインラインではなく設定ファイルに理由付きで書く」方針に従う)。ブロッキング化は行わない(exit codeを気にする必要はないが、指摘内容そのものは正確に保つ)。
   - 実行結果を、下記「ステップ1 試し打ち結果」節に記録する。これはステップ1の完了条件の一部である。
@@ -186,7 +187,7 @@
   3. `.github/workflows/ci.yml` をYAMLとして構文チェックする(例: リポジトリルートで `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` を実行、あるいはエディタ/`actionlint`等のYAML lintでも可)。あわせて、追加した `knip` ジョブの定義に `continue-on-error: true` があり `needs` キーが存在しないことを目視で確認する。
   4. **(事後確認。`/test`フェーズの完了基準には含めない)**: ゲート2承認後にベースブランチへマージされ、次のCIが実行された際に、`knip` ジョブが `checks`・`e2e` ジョブとは独立して実行され、指摘の有無に関わらずワークフロー全体が成功扱いになることを確認する。このプロジェクトの運用ではトピックブランチはpush/PR作成をせずローカルで`git merge`されるため(`ci.yml`のトリガーは`push: [main]`/`pull_request`のみ)、`/test`フェーズの時点では実CI実行を検証できない。この確認は分離し、事後確認として扱う。
 
-**自動テストを新規作成するか:** しない(理由: 今回の変更は静的解析ツール(Knip)自体の導入とCI設定変更であり、sample-appのアプリケーションコード・ビジネスロジックには一切変更がない。検証対象は「Knipが正しく実行され、非ブロッキングであること」というCI設定・ツール実行の振る舞いそのものであり、これは既存の自動テストスイート(vitest/Playwright)が検証する対象外。テスト戦略の(a)〜(d)は、既存のCI実行自体(`checks`/`e2e`/新設`knip`ジョブが実際にpush/PRごとに動く)が動作確認を兼ねており、これに加えて上記の手動確認手順でローカルからも再現確認する。新たにvitest/Playwrightのテストケースを追加する対象がない)。
+**自動テストを新規作成するか:** しない(理由: 今回の変更は静的解析ツール(Knip)自体の導入とCI設定変更であり、sample-appのアプリケーションコード・ビジネスロジックには一切変更がない。検証対象は「Knipが正しく実行され、非ブロッキングであること」というCI設定・ツール実行の振る舞いそのものであり、これは既存の自動テストスイート(vitest/Playwright)が検証する対象外。テスト戦略の(a)〜(d)は、上記の手動確認手順(`npx knip`の実行結果確認、`npm run knip:report`のexit code確認、`ci.yml`のYAML構文チェックと`knip`ジョブ定義の目視確認)によって`/test`フェーズ内でローカルから直接検証する。前述のとおりトピックブランチはpush/PR作成をせずローカルで`git merge`されるため、`/test`フェーズの時点では実際のCI実行(push/PRトリガー)自体を検証対象にはできず、実CI実行での動作確認は手動確認手順4の事後確認として分離している。新たにvitest/Playwrightのテストケースを追加する対象がない)。
 
 ## リスク・トレードオフ
 
@@ -232,6 +233,15 @@
 - **M3**: 「やらないこと」節と「テスト戦略」節に、Knipの指摘を`/test`の合否・`code-reviewer`の判定材料に使わないことを明記した決定を追加した。README追記(ステップ4)を任意から必須に格上げし、この決定をREADMEにも明記する一文を追加した。`docs/memory/entries/knip-dead-code-detection.md`にも同趣旨を追記した(別途反映)。
 - **M4**: テスト戦略の完了基準(d)を、実CI実行の確認からローカルで検証可能な内容(YAML構文の妥当性、`knip`ジョブの`continue-on-error: true`と`needs`なしの設定確認)に置き換えた。手動確認手順3も同様に修正し、実際のCI実行確認は「事後確認」として手順4に分離し、`/test`フェーズの完了基準から明確に除外した。
 - **MINOR**: 変更概要の表にあるメモリ関連3件に「designerが設計時に実施済み・implementerは対応不要」の注記を追加。`knip.json`を`knip.jsonc`(+`schema-jsonc.json`)に変更し、ドキュメント内の参照箇所も全て更新。ステップ6を「差分確認まで(コミットはメインエージェントが行う)」に修正。ステップ4の「時間が無ければ省略可」を削除し必須化。`vite: false`のコメントの因果を「vite:falseにするとテストentry既定検出が失われるため明示的に加える」という正しい向きに修正。ルートワークスペースの依存チェック確認項目に`typescript`を追加。frontendの`project`に`vite.config.ts`/`playwright.config.ts`を含め、`entry`がその部分集合になるよう修正。`ignore`に`**/node_modules/**`を追加しコメントを実態に合わせた。調査ドキュメントの相互リンクを本設計ドキュメントへのリンクに更新した(別ファイルで対応)。
+
+### 人間確認ゲート1での修正依頼への対応メモ(designer記入)
+
+ラウンド2で残存したMINOR4件について、人間確認ゲート1での「修正依頼」判断を受けて以下のとおり対応した。
+
+- **MINOR-1**(「自動テストを新規作成するか」の理由文とM4対応の矛盾): 「既存のCI実行自体(`checks`/`e2e`/新設`knip`ジョブが実際にpush/PRごとに動く)が動作確認を兼ねており」という記述を削除し、「テスト戦略」節の手動確認手順(`npx knip`実行結果確認、`npm run knip:report`のexit code確認、`ci.yml`のYAML構文チェックと`knip`ジョブ定義の目視確認)によって`/test`フェーズ内でローカルから直接検証する、という記述に置き換えた。あわせて、トピックブランチはpush/PR作成をせずローカルで`git merge`されるため実CI実行自体は`/test`時点で検証できず、実CI確認は手動確認手順4の事後確認として分離している旨を明記し、M4対応との整合を取った。
+- **MINOR-2**(`vite: false`の削除可否・`vitest`プラグイン未確認): ステップ1の確認項目に、Knip 5では`vite`プラグインと`vitest`プラグインが別々に有効化される可能性があるため`vitest`プラグインの有効/無効も含めて実際の挙動を確認すること、`vite: false`が意図通り機能しているか・`vitest: false`も別途必要かを確認すること、`ignoreDependencies`と同様に効果がなければ`vite: false`エントリを削除してよいことを追記した。
+- **MINOR-3**(`@types/node`確認項目の欠落): ステップ1の確認項目一覧に、ルートワークスペースで`npx knip`実行時に型解決関連の警告が出ないか確認する項目を追加した。`@types/node`が`backend`のみのdevDependencyでありルート・`shared`・`frontend`には存在しない(ルートは`typescript`のみ)非対称な構成を明記し、Knip公式が`knip`+`typescript`+`@types/node`の同時導入を前提にしていることを確認理由として添えた。
+- **MINOR-4**(ステップ1・2の同一ファイル変更・並列化不可の未注記): 「実装ステップ」節の導入文(実装順チェックリストの直後)に、ステップ1とステップ2がいずれも`sample-app/package.json`を変更するため、`/implement`が`TaskCreate`でタスク分割する際は`addBlockedBy`等で依存関係を明示し順序化すること(並列化不可)を明記した。
 
 ## コードレビュー結果
 
