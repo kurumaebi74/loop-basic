@@ -474,12 +474,12 @@
         <div class="node"><span class="dot"></span></div>
         <div class="card">
           <span class="badge merge">承認時のみ</span>
-          <div class="row1"><h3>マージ &amp; ワークツリー削除</h3><span class="stage-no">STAGE 09</span></div>
+          <div class="row1"><h3>マージ &amp; push &amp; ワークツリー削除</h3><span class="stage-no">STAGE 09</span></div>
           <p>
             <code class="mono">ExitWorktree(action:"keep")</code> でベースブランチへ戻り <code class="mono">git merge &lt;topic-branch&gt;</code>。
-            コンフリクトは自動解決せず停止して報告。クリーンなら <code class="mono">git worktree remove</code> と <code class="mono">git branch -d</code> で削除。
+            コンフリクトは自動解決せず停止して報告。クリーンなら<strong>続けて必ず <code class="mono">git push origin &lt;base-branch&gt;</code> を実行する</strong>(ゲート2の承認は push までを含む承認であり、別途「pushして」の指示を待たない)。push成功後に <code class="mono">git worktree remove</code> と <code class="mono">git branch -d</code> で削除。
           </p>
-          <div class="refs"><span class="ref">test.md:46–53</span></div>
+          <div class="refs"><span class="ref">test.md:46–53</span><span class="ref">CLAUDE.md:厳守ルール8</span></div>
         </div>
       </div>
     </div>
@@ -490,8 +490,8 @@
     </div>
 
     <div class="branch-note">
-      <span class="mark mono">CI(push時のみ)</span>
-      <span>マージはローカルの操作であり、自律ループの中で <code class="mono">origin</code> へ自動pushはしない。pushされたタイミング(人間の指示、または明示的に依頼された場合)で <code class="mono">.github/workflows/ci.yml</code> が typecheck・lint・test・build・E2Eを実行し、ここまでの自動チェックを人間の直push分にも適用する。</span>
+      <span class="mark mono">push は必須手順(ゲート2承認・メタ編集完了に含まれる)</span>
+      <span>マージ完了後の <code class="mono">origin</code> への push は、以前は人間の別指示を待つ任意の後片付けだったが、ローカルにcommitだけが積まれ<code class="mono">origin</code>が古いまま取り残される事故(GitHub Pagesが数コミット分古い内容を配信し続けた)を受けて<strong>必須手順</strong>に変更した(CLAUDE.md厳守ルール8)。ゲート2「承認してクローズ」後のマージ、およびCLAUDE.md/.claude/docs配下のメタ編集(ルール7の例外ルート)でのcommit後は、いずれも人間から改めて「pushして」と言われるのを待たず <code class="mono">git push origin &lt;base-branch&gt;</code> まで実行してから完了報告する。pushされたタイミングで <code class="mono">.github/workflows/ci.yml</code> が typecheck・lint・test・build・E2Eを実行し、ここまでの自動チェックを適用する。</span>
     </div>
 
     <div class="branch-note">
@@ -580,6 +580,18 @@
     </p>
   </div>
 
+  <div class="principle" style="margin-top:1rem;">
+    <span class="mark">MUST</span>
+    <p>
+      <strong>ローカルにcommitしただけで作業を終えてはならない。</strong> ゲート2「承認してクローズ」でのマージ後、および
+      CLAUDE.md自体・<code class="mono">.claude/</code>・<code class="mono">docs/</code>配下のメタ編集(厳守ルール7の例外ルート)でのcommit後は、
+      いずれも人間から改めて「pushして」と言われるのを待たず <code class="mono">git push origin &lt;base-branch&gt;</code> まで実行する。
+      ローカルcommitのみが積み重なり<code class="mono">origin</code>が古いまま取り残されると、GitHub Pages等<code class="mono">origin</code>に依存する仕組みが古いまま放置される
+      (実際に8コミット分のpush漏れでGitHub Pagesが古い内容を配信し続けた事故が発生している)。
+      <span class="mono-ref">CLAUDE.md:厳守ルール8 · docs/memory/entries/unpushed-local-commits-stale-origin.md</span>
+    </p>
+  </div>
+
   <div class="limits">
     <span class="mark">既知の制限</span>
     <ul>
@@ -621,6 +633,7 @@
           <tr><td class="mono">docs/memory/entries/eslint-strictness-ratchet-v2.md</td><td>サイズ/複雑さ/型/sonarjs/security/prettierの全ルールをdrain確認の上errorへ昇格した記録(decision)</td></tr>
           <tr><td class="mono">docs/memory/entries/pure-function-extraction.md</td><td>純粋関数への切り出し規約(convention)</td></tr>
           <tr><td class="mono">docs/memory/entries/shared-types-and-dto-validation.md</td><td>API契約の型共有・DTO検証の規約(convention)</td></tr>
+          <tr><td class="mono">docs/memory/entries/unpushed-local-commits-stale-origin.md</td><td>ローカルcommitのみでは<code class="mono">origin</code>は更新されず、GitHub Pages等が古いまま取り残される落とし穴(pitfall)。厳守ルール8のpush必須化の根拠</td></tr>
         </tbody>
       </table>
     </div>

@@ -21,6 +21,7 @@
 ## pitfall(既知の落とし穴・失敗から得た教訓)
 
 <!-- 例: - [ci-no-network](entries/ci-no-network.md) — CI環境は外部ネットワークにアクセスできない、モック必須 -->
+- [unpushed-local-commits-stale-origin](entries/unpushed-local-commits-stale-origin.md) — ローカルcommitだけではoriginは更新されない、GitHub Pages等が古いまま取り残される。ゲート2・メタ編集後は必ずpushまで行う(CLAUDE.md厳守ルール8)
 
 ## glossary(プロジェクト固有の用語集)
 
