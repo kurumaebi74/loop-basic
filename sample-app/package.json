@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "lint": "eslint .",
+    "knip": "knip",
+    "knip:report": "knip --no-exit-code",
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspace backend",
     "test:e2e": "npm run test:e2e --workspace frontend",

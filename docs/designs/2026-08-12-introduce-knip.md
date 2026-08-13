@@ -120,7 +120,7 @@
     - `@sample-app/shared` へのワークスペース間参照が unresolved / unused と誤判定されないか確認する。
   - 上記調整はすべて `knip.jsonc` 側で行い、理由をコメントとして残す(CLAUDE.mdの「例外はインラインではなく設定ファイルに理由付きで書く」方針に従う)。ブロッキング化は行わない(exit codeを気にする必要はないが、指摘内容そのものは正確に保つ)。
   - 実行結果を、下記「ステップ1 試し打ち結果」節に記録する。これはステップ1の完了条件の一部である。
-- [ ] ステップ2: `sample-app/package.json` の `scripts` に以下を追加する。
+- [x] ステップ2: `sample-app/package.json` の `scripts` に以下を追加する。
   - `"knip": "knip"`(ローカルで通常のexit codeのまま実行する版。手元で今すぐ直したい時に使う)
   - `"knip:report": "knip --no-exit-code"`(CIから呼ぶ、常にexit code 0で終わる版)
 - [ ] ステップ3: `.github/workflows/ci.yml` に、既存の `checks`・`e2e` ジョブとは独立した `knip` ジョブを追加する(下記「CI組み込み案」参照)。既存2ジョブの内容には一切手を加えない。
