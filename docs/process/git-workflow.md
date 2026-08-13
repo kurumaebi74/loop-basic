@@ -2,7 +2,7 @@
 
 このドキュメントは loop-basic リポジトリのブランチ運用・PRルールを定義する。`CLAUDE.md` から参照される。
 
-> **現状ステータス(2026-08-13時点): `/cycle`・`/investigate`・`/hotfix`・`/test`・`/release` の自動化、および直接pushを検知する`PreToolUse`フックは本ルールに追随済み。** 残るのはGitHub側のブランチ保護設定のみで、それまでは直接push禁止がエージェント側の運用ルール・フックのみで担保されている状態にある。詳細は本ドキュメント末尾の「既存の自律開発サイクルとの関係(移行状況)」を必ず参照すること。
+> **現状ステータス(2026-08-13時点): 移行完了。** `/cycle`・`/investigate`・`/hotfix`・`/test`・`/release` の自動化、直接pushを検知する`PreToolUse`フック、GitHub側のブランチ保護設定のすべてが本ルールに追随済み。詳細は本ドキュメント末尾の「既存の自律開発サイクルとの関係(移行状況)」を参照。
 
 ## ブランチモデル
 
@@ -70,12 +70,6 @@ develop ────●───────────────────
 - [x] 障害対応用の `/hotfix <incident>` コマンドを新設済み(`.claude/commands/hotfix.md`)。`hotfix/<incident-slug>` ブランチを使い、調査・設計の厚みは簡略化を許容するが、ゲート・レビュー・PR経由の反映は省略しない。
 - [x] `/test` のゲート2(「承認してクローズ」)通過後の処理を、PRベースのフロー(`develop` 向けPR → CIグリーン確認 → 人間確認 → マージ → develop環境で人間が動作確認 → `main` 向けPR → CIグリーン確認 → 人間確認 → マージ)に置き換え済み。具体的な手順は新設した `.claude/commands/release.md` に切り出し、`/test`・`/cycle`・`/hotfix` はそこから参照する。`CLAUDE.md` 厳守ルール7・8もこの変更に合わせて更新済み(メタ編集の反映もPR経由に統一)。
 - [x] エージェント側の `PreToolUse` フック(`.claude/settings.json`)。`git push origin main`・`git push origin develop`(明示的な指定、`HEAD:main`等のrefspec、`--force`/`-f`系、ブランチ未指定のまま `main`/`develop` にチェックアウト中の状態での bare `git push` のいずれも検知してブロックする。自分のブランチへのpush(`release.md`の手順)は妨げない)を追加済み。テスト済み(想定される主要なpushパターンで期待どおりブロック/許可されることを確認)。
-- [ ] ブランチ保護(直接push禁止)を機械的に強制するGitHub側の設定。**未整備。整備されるまでの間、`main`・`develop` への直接pushはエージェント側の`PreToolUse`フックと運用ルールでは防がれているが、GitHub側(リポジトリ管理者権限を持つ人間が直接pushする場合や、フックの効かない経路)からの強制力はまだない。**
+- [x] ブランチ保護(直接push禁止)を機械的に強制するGitHub側の設定。`main`・`develop` それぞれに `gh api` でbranch protectionを設定済み: `required_status_checks`(`typecheck / lint / test / build`・`Playwright e2e`。非ブロッキング運用の `Knip` ジョブは意図的に対象外)、`enforce_admins: true`(管理者権限を持つトークンでも直接pushをバイパスできない)、`required_pull_request_reviews.required_approving_review_count: 0`(ソロメンテナのため承認数は0だが「PR必須」自体は有効)、`allow_force_pushes: false`、`allow_deletions: false`。GitHubの ref update API に対する直接更新の試みが実際に `422 Changes must be made through a pull request` で拒否されることを確認済み(2026-08-13)。
 
-残る1項目(GitHub側のブランチ保護)が整備されるまでは、リポジトリ側の強制力がない状態である。
-
-## 今後の安定化施策(残タスク)
-
-1. **ブランチ保護(GitHub側)**: `main`・`develop` にGitHubのbranch protection ruleを設定し、直接push・force pushを禁止、PR必須・CIパス必須にする。**このリポジトリは単独メンテナ(ソロ)での運用のため、PRレビューの必須承認数は0にする**(承認必須にすると自分自身のPRを誰も承認できずマージが永久にブロックされるため)。GitHub側で確実にブロックされることで、エージェントの実装ミスや暴走・フックのすり抜けがあってもリポジトリ側で防げる(運用ルール・フックだけに頼らない多層防御。`CLAUDE.md`厳守ルール7の「口頭指示 + 機械的ガードレールの二重防御」と同じ考え方)。
-
-上記の実装をもって、本ドキュメントが定義する目標状態への移行を完了とする。
+**本ドキュメントが定義する目標状態への移行はこれで完了した。** `main`・`develop` への反映は、エージェント側の運用ルール・`PreToolUse`フックに加え、GitHub側のブランチ保護によっても機械的に強制されている(三重の防御)。
