@@ -125,8 +125,8 @@
   - `"knip:report": "knip --no-exit-code"`(CIから呼ぶ、常にexit code 0で終わる版)
 - [x] ステップ3: `.github/workflows/ci.yml` に、既存の `checks`・`e2e` ジョブとは独立した `knip` ジョブを追加する(下記「CI組み込み案」参照)。既存2ジョブの内容には一切手を加えない。
 - [x] ステップ4(必須): `sample-app/README.md` の「実行方法」に `npm run knip:report` の一行、「この構成が示している方針」に「デッドコード・未使用依存の検出(Knip)もレポートのみ・非ブロッキングから始める」旨の一行を追記する。あわせて、**Knipの指摘は `/test` の合否判定にも `code-reviewer` の判定材料にも使わないこと**(report-only運用であるため)を明記する一文を追加する(本設計の「やらないこと」節・「テスト戦略」節の決定を、実装対象のドキュメントにも反映する)。
-- [ ] ステップ5: ローカルで `cd sample-app && npm run typecheck && npm run lint && npm run test && npm run build` が今までどおり通ることを確認する(Knip導入が既存チェックに影響しないことの確認)。
-- [ ] ステップ6: `git add -A && git status` で意図した差分のみが含まれることを確認する。**このステップの範囲はここまで(差分確認のみ)。実際の `git commit` はimplementerではなく、メインエージェントがタスク完了報告を受けてから行う**(CLAUDE.mdの「実装フェーズのタスク分割・並列化」節: 並列dispatch中のimplementerは自分でコミットしない)。
+- [x] ステップ5: ローカルで `cd sample-app && npm run typecheck && npm run lint && npm run test && npm run build` が今までどおり通ることを確認する(Knip導入が既存チェックに影響しないことの確認)。
+- [x] ステップ6: `git add -A && git status` で意図した差分のみが含まれることを確認する。**このステップの範囲はここまで(差分確認のみ)。実際の `git commit` はimplementerではなく、メインエージェントがタスク完了報告を受けてから行う**(CLAUDE.mdの「実装フェーズのタスク分割・並列化」節: 並列dispatch中のimplementerは自分でコミットしない)。
 
 ### ステップ1 試し打ち結果(実装時に記入)
 
