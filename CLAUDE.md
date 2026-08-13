@@ -35,7 +35,7 @@
      完了 / 次サイクルへ
 ```
 
-`/cycle <topic>` はこの一連の流れを最初から最後まで（2つのゲートを含めて）通しで実行するオーケストレーションコマンド。個別フェーズだけを実行したい場合は `/investigate`・`/design`・`/implement`・`/test` を単体で使う。各フェーズの詳細な仕組みは `docs/process/agent-cycle.md` を参照。
+`/cycle <topic>` はこの一連の流れを最初から最後まで（2つのゲートを含めて）通しで実行するオーケストレーションコマンド。個別フェーズだけを実行したい場合は `/investigate`・`/design`・`/implement`・`/test` を単体で使う。障害(インシデント)対応には `/cycle` の代わりに `/hotfix <incident>` を使う(構造は同じだが `hotfix/<incident-slug>` ブランチを使い、調査・設計の厚みを簡略化できる)。ゲート2通過後の `main`/`develop` への反映(PR作成・マージ)は `/release` が担う(`/cycle`・`/hotfix` から自動的に呼び出される)。各フェーズの詳細な仕組みは `docs/process/agent-cycle.md`、Gitブランチ運用・PRの詳細は `docs/process/git-workflow.md` を参照。
 
 ## 厳守ルール(ゲート)
 
@@ -45,8 +45,8 @@
 4. 各フェーズの成果物は必ずファイルとして残す(口頭やチャットのみで済ませない)。次フェーズはそのファイルを読んで開始する。
 5. 調査・製造・テストのフェーズ内で致命的な不確実性(要件不明、認証情報が必要、破壊的操作が必要 等)にぶつかった場合は、そのフェーズ内であっても停止して人間に確認してよい。
 6. **`/implement` を実行しているメインエージェントは、自分でファイルを編集・作成して実装してはならない。** 必ず `TaskCreate` でタスクに分割し、`implementer` サブエージェントに委譲する。タスクが1つしかない場合も例外なく委譲する(詳細は `docs/process/agent-cycle.md` の「実装フェーズのタスク分割・並列化」節)。
-7. **スラッシュコマンド(`/cycle` 等)を使わず、自然言語で実装・修正を依頼された場合も、対象が実装対象プロジェクト(現在は `sample-app/`)のコード変更であれば、`/cycle` を実行したときと同じ手順(調査→設計→ゲート1→実装→テスト→ゲート2)を必ず起動しなければならない。** 「軽微な変更だから」「スラッシュコマンドが明示されていないから」を理由に、このフローを省略して直接ファイルを編集してはならない。対象外なのは、CLAUDE.md自体・`.claude/`・`docs/`配下の運用ルールやドキュメントに関するメタな変更で、これらは引き続き直接編集してよい(このフロー自体を変更する作業に、このフローを適用すると循環してしまうため)。**このルールは`.claude/settings.json`のhook(PreToolUse、`Write|Edit`と`Bash`)によっても機械的に強制されている**: `sample-app/`・`.github/workflows/`配下のファイルをトピック専用ワークツリー外で編集しようとする、またはそれらのステージ済み変更をワークツリー外で`git commit`しようとすると、hookがブロックする。ルール6・7は口頭の指示だけでなくこのhookによる二重の防御で担保されている。
-8. **ローカルにコミットしただけの状態で作業を終えてはならない。人間確認ゲート(ゲート2「承認してクローズ」)通過後、およびルール7の例外ルート(CLAUDE.md自体・`.claude/`・`docs/`配下のメタ編集)でコミットした後は、いずれも `git push origin <base-branch>` まで実行して初めてその単位の作業が完了したとみなす。** 改めて人間から「pushして」という指示を待ってはならない——ゲート2の承認、およびメタ編集の完了報告そのものが push までを含む承認である。手順は「マージ→push→ワークツリー削除」の順で行い(詳細は `.claude/commands/test.md` の「ゲート通過後のワークツリー処理」)、push が失敗した場合(認証エラー・リモート側が更新されている等)は自動リトライで誤魔化さずエラーをそのまま人間に報告して停止する。ローカルにだけコミットが積まれ `origin` が古いまま放置されると、GitHub Pages 等 `origin` の状態に依存する仕組みが古いまま取り残される(実際に発生した障害。詳細は `docs/memory/entries/unpushed-local-commits-stale-origin.md`)。**※本ルールは `docs/process/git-workflow.md` が定義するPRベースの目標フロー(main/developへの直接push禁止)への移行が完了するまでの暫定運用である。移行状況は同ドキュメントの「既存の自律開発サイクルとの関係(現状の差分・移行TODO)」を参照。**
+7. **スラッシュコマンド(`/cycle` 等)を使わず、自然言語で実装・修正を依頼された場合も、対象が実装対象プロジェクト(現在は `sample-app/`)のコード変更であれば、`/cycle` を実行したときと同じ手順(調査→設計→ゲート1→実装→テスト→ゲート2)を必ず起動しなければならない。** 「軽微な変更だから」「スラッシュコマンドが明示されていないから」を理由に、このフローを省略して直接ファイルを編集してはならない。対象外なのは、CLAUDE.md自体・`.claude/`・`docs/`配下の運用ルールやドキュメントに関するメタな変更で、これらは引き続き調査→設計→実装→テストの4フェーズを経ずに直接編集してよい(このフロー自体を変更する作業に、このフローを適用すると循環してしまうため)。**ただし、編集後にmainへ反映する方法(git操作)は feature/hotfix と同じくPR経由に統一されている(直接pushはしない)。詳細はルール8および `.claude/commands/release.md` の「メタ編集(CLAUDE.md・`.claude/`・`docs/`配下)への適用」を参照。** **このルールは`.claude/settings.json`のhook(PreToolUse、`Write|Edit`と`Bash`)によっても機械的に強制されている**: `sample-app/`・`.github/workflows/`配下のファイルをトピック専用ワークツリー外で編集しようとする、またはそれらのステージ済み変更をワークツリー外で`git commit`しようとすると、hookがブロックする。ルール6・7は口頭の指示だけでなくこのhookによる二重の防御で担保されている。
+8. **`main`・`develop` への直接pushは禁止。ローカルにコミットしただけの状態、あるいはトピックブランチをpushしただけの状態で作業を終えてはならない。** 人間確認ゲート(ゲート2「承認してクローズ」)通過後、およびルール7の例外ルート(CLAUDE.md自体・`.claude/`・`docs/`配下のメタ編集)でコミットした後は、いずれも `.claude/commands/release.md` の手順(feature/hotfixブランチをpush → `develop` 向けPR作成・CI確認・**マージ直前に`AskUserQuestion`で人間確認**・マージ → 人間による動作確認 → `main` 向けPR作成・CI確認・**マージ直前に`AskUserQuestion`で人間確認**・マージ)を実行して初めてその単位の作業が完了したとみなす。改めて人間から「pushして」「マージして」という指示を待つ必要はない(ゲート2の承認、およびメタ編集の完了報告そのものがrelease手順の実行を含む承認である)が、**PR作成後の実マージ操作(`gh pr merge`)そのものは、実行直前に必ず `AskUserQuestion` で確認を取ってから行う**(ルール3のゲート確認とは別に、マージという不可逆性の高い操作に固有の確認ポイントである)。コンフリクトやCIの失敗が発生した場合は自動解決を試みず、その場でエラーをそのまま人間に報告して停止する。ローカルにだけコミット・pushが積まれ `main`/`develop` が古いまま放置されると、GitHub Pages 等 `origin` の状態に依存する仕組みが古いまま取り残される(実際に発生した障害。詳細は `docs/memory/entries/unpushed-local-commits-stale-origin.md`。この障害を受けて導入した「ゲート2通過後は必ずpushまで行う」という原則自体は現在も有効であり、今回のPRベース化はその実現手段を直接pushからPR経由へ変更したものである)。
 
 ## ディレクトリ構成
 
@@ -58,7 +58,7 @@
 - `docs/process/` … このリポジトリの運用ルールの詳細ドキュメント(Git運用フロー、自律開発サイクルの仕組み、共有メモリの運用、sample-appの開発・検証コマンド)。上記「このリポジトリのルール文書(構成)」参照
 - `docs/investigations/_parts/<topic-slug>/` … 調査フェーズを並列化(ファンアウト)した際の、観点ごとの作業ファイル置き場(詳細は `docs/process/agent-cycle.md` の「調査フェーズの並列化(ファンアウト)」)
 - `.claude/worktrees/<topic-slug>/` … 調査フェーズ以降(調査・設計・実装・テスト)で分離された git worktree(詳細は `docs/process/agent-cycle.md` の「ワークツリー分離(複数セッション対応)」)。`.gitignore` 対象で、通常はマージ後に削除される
-- `.claude/commands/` … `/investigate` `/design` `/implement` `/test` `/cycle` の定義
+- `.claude/commands/` … `/investigate` `/design` `/implement` `/test` `/cycle` `/hotfix` `/release` の定義
 - `.claude/agents/` … 各フェーズを担当するサブエージェント定義(investigator / designer / implementer / tester / design-reviewer / code-reviewer)
 - `.claude/settings.json` … プロジェクト共有設定。`worktree.baseRef: "head"`(topic用ワークツリーは`git worktree add`で明示的に分岐元を指定するため直接は使わないが、他の用途でのEnterWorktree呼び出しに備えて設定済み)、`hooks.PreToolUse`(`sample-app/`・`.github/workflows/`配下の変更・コミットをトピック専用ワークツリー外で行おうとするとブロックするガードレール。詳細は「厳守ルール」ルール7)
 
