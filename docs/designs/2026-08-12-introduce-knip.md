@@ -251,7 +251,7 @@
 
 | ラウンド | 判定 | 主な指摘 |
 | --- | --- | --- |
-| 1 | | |
+| 1 | MAJOR | MAJOR-1: 実測で判明した事実(knip.jsoncは各ワークスペース空オーバーライドで十分、entry/project/ignore/ignoreDependencies/vite:falseはすべて不要)が、`docs/memory/entries/knip-dead-code-detection.md` の背景記述(「workspacesごとにentry/projectを定義し、ignore/ignoreDependencies/vite:false等で個別に抑制する方針を取った」)と矛盾したまま`status: active`で残っている。CLAUDE.mdのメモリ運用ルール2に従いorchestratorがエントリ本文と`updated`を更新すべき。MINOR-1: `knip.jsonc`のコメント(「ignoreはproject globがsrc/**/*.tsに限定されるため冗長」)は、projectを設定していない最終形には当てはまらない根拠(実際はKnip既定の除外挙動)。MINOR-2: READMEに`npm run knip`(exit≠0版)の用途説明がなく`knip:report`のみ記載。検証結果: 設計からの逸脱(簡素化)は、sample-appの複製にデッドファイル・未使用export・未使用依存・未登録workspaceを注入した実測で全ワークスペース(root/shared/backend/frontend/e2e)の検出が正しく機能することを確認済みで妥当。CIジョブ(continue-on-error: true・needs無し・既存2ジョブ無改変)、npm script、README追記、typecheck/lint/build、コミット粒度はいずれも設計どおり。 |
 | 2(ラウンド1がMAJORの場合のみ) | | |
 
 未解決のMAJORが残った場合: (なければ「なし」。テストレポートにも引き継ぐこと)

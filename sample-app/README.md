@@ -36,6 +36,7 @@ npm run lint                # ESLint(サイズ/複雑さ/型ルールはwarn —
 npm run test                 # backendの純粋関数ユニットテスト(vitest)
 npm run build                 # 全ワークスペースのビルド(shared以外。--if-presentでスキップ)
 npm run knip:report           # デッドコード・未使用依存の検出(Knip)。レポートのみ・非ブロッキング(常にexit code 0)
+npm run knip                  # 同上だが指摘があれば非0で終了する版。ローカルで今すぐ確認したい時用(CIはknip:reportを使う)
 npm run dev:backend          # http://localhost:3001 でAPI起動(nest start --watch)
 npm run dev:frontend          # 別ターミナルで http://localhost:5173 起動(/api は3001にproxy)
 npm run test:e2e --workspace frontend   # Playwright(要 npx playwright install chromium)。backend/frontendを自動起動する
