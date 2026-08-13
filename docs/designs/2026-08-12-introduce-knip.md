@@ -108,7 +108,7 @@
 
 実装順に並んだチェックリスト。`/implement` はこの順序で着手する。**ステップ1とステップ2はいずれも `sample-app/package.json` を変更する(ステップ1は`knip`devDependency追加、ステップ2はnpm script追加)ため、`/implement`が`TaskCreate`でタスク分割する際は`addBlockedBy`等で依存関係を明示し順序化すること(同一ファイルを変更する複数タスクは並列化不可というCLAUDE.mdの方針に従う)。**
 
-- [ ] ステップ1(必須・最優先・試し打ち): ローカル環境のNodeバージョンが `v20.19.0` 以上であることを `node -v` で確認する(CIは`node-version: 22`のため問題ないが、ローカル実行環境でも確認しておく)。`sample-app/package.json` に `knip` をdevDependency(バージョン範囲 `^5.0.0`)として追加し `npm install`(sample-appルートで実行)。上記の `knip.jsonc` 案を `sample-app/knip.jsonc` として作成し、`cd sample-app && npx knip` を実行する。出力を確認し、**指摘0件は完了条件ではない**ことを前提に、指摘ごとに以下の3分岐で判断する:
+- [x] ステップ1(必須・最優先・試し打ち): ローカル環境のNodeバージョンが `v20.19.0` 以上であることを `node -v` で確認する(CIは`node-version: 22`のため問題ないが、ローカル実行環境でも確認しておく)。`sample-app/package.json` に `knip` をdevDependency(バージョン範囲 `^5.0.0`)として追加し `npm install`(sample-appルートで実行)。上記の `knip.jsonc` 案を `sample-app/knip.jsonc` として作成し、`cd sample-app && npx knip` を実行する。出力を確認し、**指摘0件は完了条件ではない**ことを前提に、指摘ごとに以下の3分岐で判断する:
   - **(a) 誤検知(false positive)と判断できる場合**: 「上記補足に書いた既知の使用箇所」と矛盾する、またはKnipが追跡し損ねているだけと判断できる場合は、`knip.jsonc` 側の `entry`/`project`/`ignore`/`ignoreDependencies` で個別に調整し、理由をコメントとして残す(コード自体は変更しない)。
   - **(b) 真陽性(true positive)、つまり実際に未使用と判断できる場合**: `knip.jsonc` 側で抑制しない。指摘としてそのまま残し、レポートに現れる状態を維持する(このステップではコードの削除・リファクタリングは行わない。スコープ外)。
   - **(c) 誤検知か真陽性か判断がつかない場合**: 抑制せず保留する(不確実な状態のまま握りつぶさない)。判断材料が今後増えた時点で別途対応する。
@@ -134,11 +134,13 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 実行日時 / knipバージョン | (記入) |
-| 総指摘件数 | (記入) |
-| (a) 誤検知として `knip.jsonc` 側で調整した件数と内訳 | (記入) |
-| (b) 真陽性としてレポートに残した件数と内訳 | (記入) |
-| (c) 判断保留として残した件数と内訳 | (記入) |
+| 実行日時 / knipバージョン | 2026-08-13 / knip 5.88.1(`sample-app/package.json`の`^5.0.0`範囲内、`node -v` は v22.16.0 でNode要件 `v20.19.0` 以上を満たす) |
+| 総指摘件数 | 設計案の`knip.jsonc`をそのまま実行した初回結果は「issues: 0件」「configuration hints: 14件」(exit code 0)。issuesは終始0件(未使用ファイル・未使用export・未使用依存・未解決import等は一度も検出されず)。configuration hintsは調整により最終的に0件まで解消。 |
+| (a) 誤検知として `knip.jsonc` 側で調整した件数と内訳 | 14件すべてが「誤検知」ではなく「Knipの既定プラグイン検出と重複する冗長設定」という単一カテゴリの指摘だった。個別に`npx knip --debug`で実際の自動検出結果を確認しながら1件ずつ削除・検証し、最終的に全14件を解消(内訳: `ignore`のビルド/テスト成果物パターン5件→`project`グロブが`src/**/*.ts`等に限定されており元々スキャン対象外のため全削除、`backend.ignoreDependencies`の`@nestjs/platform-express`/`rxjs`2件→実際には未使用として指摘されないため削除、ルート`.`のeslint.config.mjs向け`entry`/`project`2件→KnipのESLintプラグインが自動検出するため削除、frontendの`entry`/`project`のうち`vite.config.ts`/`playwright.config.ts`/`src/main.tsx`/`e2e/**/*.spec.ts`関連5件→Vite/Playwrightプラグインの既定検出でカバーされるため削除)。あわせて、config hintには現れなかったが個別検証で無効と確認できた`backend.vite: false`(Vite/Vitestは別プラグインで、vitestのテストentry検出は`vite:false`の有無に関わらず機能する)と`backend.entry`の`src/**/*.test.ts`明示指定(Vitestプラグインの既定パターンで自動検出される)も同様の理由で削除した。すべて`knip.jsonc`のコメントに理由を記録済み(コードは無変更)。 |
+| (b) 真陽性としてレポートに残した件数と内訳 | 0件(実コードの未使用ファイル・未使用export・未使用依存は一度も検出されなかった)。 |
+| (c) 判断保留として残した件数と内訳 | 0件。 |
+
+補足: 最終的な`knip.jsonc`は各ワークスペース(`.`/`shared`/`backend`/`frontend`)を空のオーバーライド(`{}`)で列挙するだけの構成になった。設計案は静的読解(Bashツールなし)に基づく慎重な個別指定だったが、実地試し打ちの結果、Knipの各プラグイン(ESLint/TypeScript/Node.js/Nest/Vite/Vitest/Playwright/Prettier)の既定の自動検出だけで本構成(npm workspaces + 各種標準的な設定ファイル配置)を過不足なくカバーできることが判明したため。念のため`npx knip --include files,dependencies,unresolved,exports,types,duplicates,unlisted --reporter json`でも`{"files":[],"issues":[]}`を確認し、`@sample-app/shared`へのワークスペース間参照のunresolved/unused誤判定、ルートワークスペースの`@types/node`非対称構成(backendのみ)に起因する型解決警告も発生しないことを確認した。既存の `npm run typecheck` / `npm run lint` への影響もないことを確認済み(ステップ5で再確認予定)。
 
 ### CI組み込み案
 
