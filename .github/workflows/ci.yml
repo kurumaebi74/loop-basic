@@ -61,3 +61,28 @@ jobs:
         run: npm run test:e2e --workspace frontend
         env:
           CI: true
+
+  knip:
+    name: Knip (dead code / unused deps report, non-blocking)
+    runs-on: ubuntu-latest
+    # レポートのみ・非ブロッキング。knip自体が --no-exit-code で常にexit 0を返す上に、
+    # continue-on-error でも二重に非ブロッキング化しておく(CLAUDE.mdの
+    # 「新しいルールは初日からブロックしない」方針)。checks/e2eジョブの成否とは無関係に
+    # 実行してよいため needs は付けない。
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: sample-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sample-app/package-lock.json
+
+      - run: npm ci
+
+      - name: Knip (dead code / unused deps report)
+        run: npm run knip:report
