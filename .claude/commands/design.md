@@ -47,7 +47,7 @@ argument-hint: [topic]
 - 修正依頼 — 設計のどこを直すべきか具体的にフィードバックをもらい、設計をやり直す
 - 差し戻し — 調査自体が不十分。`/investigate` からやり直す
 
-**スキル化候補が控えられている場合**(手順1・7)、この人間確認ゲートで設計の承認可否と合わせて、候補ごとに「Skill化する/しない/保留」も確認する(同じ `AskUserQuestion` 呼び出し内の追加設問でよい)。承認が得られた候補のみ、メインエージェントが `.claude/skills/<skill-name>/SKILL.md` を作成し、元の `docs/memory/entries/<name>.md` の `status` を `promoted-to-skill` に更新して `docs/memory/MEMORY.md` にも反映する(詳細はCLAUDE.mdの「再利用パターンのSkill化」)。
+**スキル化候補が控えられている場合**(手順1・7)、この人間確認ゲートで設計の承認可否と合わせて、候補ごとに「Skill化する/しない/保留」も確認する(同じ `AskUserQuestion` 呼び出し内の追加設問でよい)。承認が得られた候補のみ、メインエージェントが `.claude/skills/<skill-name>/SKILL.md` を作成し、元の `docs/memory/entries/<name>.md` の `status` を `promoted-to-skill` に更新して `docs/memory/MEMORY.md` にも反映する(詳細は`docs/process/shared-memory.md`の「再利用パターンのSkill化」)。
 
 **承認が得られるまで `/implement` を実行してはならない。** これはこのプロジェクトで最も重要なルールの一つである。承認以外の回答を得た場合は、フィードバックを反映して設計を修正し、再度このゲートを提示する。
 

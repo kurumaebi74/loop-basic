@@ -8,7 +8,7 @@ updated: YYYY-MM-DD
 ---
 
 <!-- related_topics には、この規約/落とし穴を実際に適用したtopic-slugを追記していく(convention/pitfallで特に重要)。
-     3つ以上になったらスキル化候補(詳細はCLAUDE.mdの「再利用パターンのSkill化」)。 -->
+     3つ以上になったらスキル化候補(詳細は`docs/process/shared-memory.md`の「再利用パターンのSkill化」)。 -->
 
 <結論・規約・教訓・用語の定義などを1〜3行で。読み手はこの1エントリだけで意味が分かる必要がある>
 

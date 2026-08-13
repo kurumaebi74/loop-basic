@@ -21,7 +21,7 @@ argument-hint: [topic]
 
 ## 手順
 
-1. `docs/memory/MEMORY.md` を読み、既存の decision / pitfall / glossary で関連するものがあれば `docs/memory/entries/` の詳細も確認する。**convention/pitfallエントリを実際に調査の判断材料として適用した場合、そのエントリの frontmatter `related_topics` に今回のtopic-slugを追記する**(まだ含まれていなければ)。追記の結果 `related_topics` が3つ以上の異なるtopicを含むに至ったら「スキル化候補」として控えておく(手順6で報告する。詳細はCLAUDE.mdの「再利用パターンのSkill化」)。
+1. `docs/memory/MEMORY.md` を読み、既存の decision / pitfall / glossary で関連するものがあれば `docs/memory/entries/` の詳細も確認する。**convention/pitfallエントリを実際に調査の判断材料として適用した場合、そのエントリの frontmatter `related_topics` に今回のtopic-slugを追記する**(まだ含まれていなければ)。追記の結果 `related_topics` が3つ以上の異なるtopicを含むに至ったら「スキル化候補」として控えておく(手順6で報告する。詳細は`docs/process/shared-memory.md`の「再利用パターンのSkill化」)。
 2. `docs/templates/investigation-template.md` を読み、テンプレート構成を把握する。
 3. **トピックが分解できるか判断する。** トピックの中に、互いの結果を待たずに独立して調べられる観点が2つ以上あるか確認する(例:「ライブラリ選定」と「既存アーキテクチャとの整合性」と「パフォーマンス制約」)。観点同士が強く依存する場合(片方の結論がもう片方の調べ方を左右する)や、観点が実質1つしかない場合は分解しない。分解する場合も観点は2〜4個程度に留める。多すぎると統合コストが調査コストを上回る。
 
