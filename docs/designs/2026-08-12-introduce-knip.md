@@ -252,9 +252,9 @@
 | ラウンド | 判定 | 主な指摘 |
 | --- | --- | --- |
 | 1 | MAJOR | MAJOR-1: 実測で判明した事実(knip.jsoncは各ワークスペース空オーバーライドで十分、entry/project/ignore/ignoreDependencies/vite:falseはすべて不要)が、`docs/memory/entries/knip-dead-code-detection.md` の背景記述(「workspacesごとにentry/projectを定義し、ignore/ignoreDependencies/vite:false等で個別に抑制する方針を取った」)と矛盾したまま`status: active`で残っている。CLAUDE.mdのメモリ運用ルール2に従いorchestratorがエントリ本文と`updated`を更新すべき。MINOR-1: `knip.jsonc`のコメント(「ignoreはproject globがsrc/**/*.tsに限定されるため冗長」)は、projectを設定していない最終形には当てはまらない根拠(実際はKnip既定の除外挙動)。MINOR-2: READMEに`npm run knip`(exit≠0版)の用途説明がなく`knip:report`のみ記載。検証結果: 設計からの逸脱(簡素化)は、sample-appの複製にデッドファイル・未使用export・未使用依存・未登録workspaceを注入した実測で全ワークスペース(root/shared/backend/frontend/e2e)の検出が正しく機能することを確認済みで妥当。CIジョブ(continue-on-error: true・needs無し・既存2ジョブ無改変)、npm script、README追記、typecheck/lint/build、コミット粒度はいずれも設計どおり。 |
-| 2(ラウンド1がMAJORの場合のみ) | | |
+| 2(ラウンド1がMAJORの場合のみ) | PASS | MAJOR-1/MINOR-1/MINOR-2の修正がいずれもファイル本文に反映済みであることを実読で確認(メモリエントリの背景を「設計案→ステップ1試し打ちで抑制設定は全て不要と判明→空オーバーライドに帰着→教訓」に書き換え+`updated: 2026-08-13`、knip.jsoncのdist除外根拠コメント差し替え、READMEに`knip`/`knip:report`の使い分け追記)。エントリ本文と実装(全ワークスペース`{}`)の矛盾は解消。再検証: typecheck/lint/build/knipすべて成功(knip指摘0件)、CI YAMLは`knip`ジョブのみ`continue-on-error: true`・`needs`なし、package-lockは追加行のみ、作業ツリーはクリーン。残MINOR(修正ループ上限のため未対応、テストレポートへ引き継ぎ): MINOR-3 `knip.jsonc`の新コメント「Knipは既定でdist/等を除外」は不正確で、実機構は既定で`.gitignore`を尊重すること(`npx knip --no-gitignore`ではdist配下8件がUnused filesとして検出される)。結論(ignore設定不要)自体は正しく機能影響なし。MINOR-4 本ドキュメント「ステップ1 試し打ち結果」表に旧根拠(projectグロブがsrc/**限定)が残存し、修正後のknip.jsoncコメントと不整合に見える。MINOR-5 メモリエントリ「適用範囲」の「workspace別entry等」という表現が最終形と噛み合っていない。参考: `npm audit`でdev依存にhigh 4件(brace-expansion/fast-uri/js-yaml/nanoid)があるが、いずれもmain時点から存在しKnip導入起因ではない。 |
 
-未解決のMAJORが残った場合: (なければ「なし」。テストレポートにも引き継ぐこと)
+未解決のMAJORが残った場合: なし
 
 ## 人間確認ゲート記録
 
