@@ -1,9 +1,9 @@
 ---
-name: find-skills
+name: skill-search
 description: "skills.sh から外部の Claude Code Skill を検索・インストールする(Skills CLI: npx skills)。Triggers: 'Skillを探して', '〇〇ができるSkillない?', 'find skills', 'npx skills', 'スキルを検索', '便利なSkillある?', 'Skill おすすめ', 'スキル インストール', 'install skill'。Do NOT use for: 新規Skillの作成・既存Skillの改良(→ skill-creator)、インストール済みSkillの更新(→ npx skills check/update を直接案内)。"
 ---
 
-# find-skills: skills.sh Skill検索・インストール
+# skill-search: skills.sh Skill検索・インストール
 
 skills.sh のオープンエコシステムから Claude Code 向け Skill を検索し、選択・インストール・使い方案内までを一貫して行う。ユーザーは「〇〇に使える Skill ない?」と聞くだけでよく、検索クエリの生成・品質評価・インストール操作は自動で実行する。外部プラグインに依存しない、このリポジトリ独自のスキル。
 
