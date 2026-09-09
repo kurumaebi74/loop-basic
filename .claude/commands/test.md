@@ -7,11 +7,7 @@ argument-hint: [topic]
 
 ## ワークツリーの確認
 
-このフェーズは `/implement` が作成したトピック専用ワークツリー内で実施する(実装対象のコードがそこにあるため)。
-
-- 現在のセッションが既にそのワークツリーに入っている場合(`/cycle` から連続して呼ばれた場合など)、そのまま作業する。
-- **別のトピックのワークツリーに入ったままの場合**、先に `ExitWorktree(action: "keep")` でそこから抜けてから次に進む。
-- 入っていない場合(`/test` を単体で呼び出した等)、`EnterWorktree` を `path: .claude/worktrees/<topic-slug>` で呼び出して該当ワークツリーに入る。ワークツリーが存在しない場合は `/implement` が完了していない可能性が高いので、その旨を報告して停止する。
+このフェーズは `/implement` が作成したトピック専用ワークツリー内で実施する(実装対象のコードがそこにあるため)。`.claude/skills/topic-worktree/SKILL.md` の `topic-worktree` スキルを `topic-slug: <topic-slug>`、`branch-prefix: feature`(または`/hotfix`経由なら`hotfix`)で呼び出す。ワークツリーが存在しない場合は `/implement` が完了していない可能性が高いので、その旨を報告して停止する。
 
 ## 手順
 
