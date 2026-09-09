@@ -10,7 +10,7 @@ description: 作業を孤立したgit worktreeで行うべきか判断し、こ�
 ## Step 0: どちらの状況か判定する
 
 1. **`/investigate`・`/design`・`/implement`・`/test`・`/cycle`・`/hotfix` のいずれかを実行中、またはこれから実行しようとしている(トピックサイクルの一部)か?**
-   → **Yes**: このスキルではなく `docs/process/agent-cycle.md` の「ワークツリー分離」節の手順にそのまま従う。要点だけ再掲する:
+   → **Yes**: このスキルではなく `.claude/skills/topic-worktree/SKILL.md` の `topic-worktree` スキルを使う(詳細な手順・背景は `docs/process/agent-cycle.md` の「ワークツリー分離」節も参照)。要点だけ再掲する:
    - 新規トピックなら: ベースブランチから `git worktree add -b feature/<topic-slug>(障害対応は hotfix/<incident-slug>) .claude/worktrees/<topic-slug> <base-branch>` で直接作成し、`EnterWorktree(path: .claude/worktrees/<topic-slug>)` で入る。**ネイティブの`EnterWorktree`だけで新規作成しない**(共有ディレクトリの`checkout`状態を変えるレースコンディションを避けるため、意図的に`git worktree add`を直接使う設計になっている)。
    - 既に存在するトピックワークツリーなら: 新規作成せず `EnterWorktree(path: ...)` で入るだけ。
    - このスキルの以降のステップ(Step 1以降)は適用しない。ここで終了。
