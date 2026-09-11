@@ -67,7 +67,7 @@
 - **investigator**: 読み取り専用に近い調査(Web検索・コード探索)。実装はしない。
 - **designer**: 調査結果を踏まえて設計書を書く。コードは書かない。DBスキーマ変更を伴う設計は `db-designer` に委譲する。
 - **db-designer**: `designer` から、テーブル新設・スキーマ変更・データモデリングを伴う設計のときだけ呼び出される補助エージェント。外部Skill(`database-schema-designer`)を使ってDBスキーマ部分の案を作り、テキストで返す(自分ではファイルを書かない)。
-- **frontend-designer**: `designer` から、フロントエンドのディレクトリ構成・コンポーネント配置の判断を伴う設計のときだけ呼び出される補助エージェント。feature分割・FSD由来のセグメント分割(api/model/ui)・bulletproof-react由来の共有層を組み合わせた標準アーキテクチャに沿って構成案を作り、テキストで返す(自分ではファイルを書かない)。
+- **frontend-designer**: `designer` から、フロントエンドのディレクトリ構成・コンポーネント配置の判断を伴う設計のときだけ呼び出される補助エージェント。feature分割・FSD由来のセグメント分割(api/model/hooks/types/ui)・bulletproof-react由来の共有層を組み合わせた標準アーキテクチャに沿って構成案を作り、テキストで返す(自分ではファイルを書かない)。
 - **design-reviewer**: designerとは別の視点で設計書をレビューする。自分では書き直さない。
 - **implementer**: `TaskList`で割り当てられた単一タスクの範囲だけを実装する。設計にない範囲を勝手に広げない。並列dispatch中は自分でコミットも共有メモリへの書き込みも行わない。
 - **code-reviewer**: implementerとは別の視点で実装をレビューする。自分では修正しない。

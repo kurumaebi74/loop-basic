@@ -13,10 +13,12 @@ model: sonnet
 
 1. **ルーティングと実装の分離**(Next.js App Router の colocation 規約に着想): `routes/`(または`app/`)配下はルート定義だけを置く薄い層とし、ビジネスロジック・API呼び出し・状態管理を一切持たない。実装の実体は対応する`features/<name>/`からimportして配置するだけにする。
 2. **feature単位の分割**(feature-based / bulletproof-react): 画面・機能ごとに`features/<name>/`を作り、その画面固有のコード(コンポーネント・hooks・API呼び出し)をここに閉じ込める。feature間の直接import(横方向の依存)は禁止し、共有が必要なら`shared/`に上げる。
-3. **feature内のセグメント分割**(Feature-Sliced Design の segment 概念): 各`features/<name>/`は用途別に3セグメントへ分割する。
-   - `api/` — 通信層。生のAPI呼び出しとレスポンス型のみ。加工しない、UIを知らない、他featureから直接importされない。
-   - `model/` — ビジネスロジック層。`api/`を呼び出し、取得した生データをドメインの形に加工(集計・整形・バリデーション等)し、`ui/`が使いやすい形(hookの戻り値など)にする。ビジネスルールはここに閉じる。
-   - `ui/` — UI層。`model/`のhookを呼ぶだけの「dumbコンポーネント」。直接`api/`を呼ばない、データ加工をしない。
+3. **feature内のセグメント分割**(Feature-Sliced Design の segment 概念): 各`features/<name>/`は用途別に最大5セグメントへ分割する。api/model/uiの3分割だけでは「Reactの状態管理をどこに書くか」「複数セグメントで使う型をどこに置くか」が曖昧になり実装しづらいため、`hooks/`・`types/`を独立させる。依存してよい順序は `api → model → hooks → ui`(`types/`はどこからでも参照可でこの順序の外)。**全てのfeatureが5つ揃っている必要はない。使わないセグメントは作らない**(例: 複数セグメントに跨る型が無いfeatureなら`types/`は不要)。
+   - `api/` — 通信層。生のAPI呼び出しと、そのレスポンス固有の型のみ。加工しない、Reactに依存しない、他featureから直接importされない。
+   - `model/` — ビジネスロジック層。**Reactに依存しない純粋関数**として、集計・整形・バリデーションなどのドメインロジックを書く。React Testing Library等を使わずに単体テストが書けることを目安にする。
+   - `hooks/` — Reactフック層。`api/`と`model/`を呼び出し、状態管理・副作用(データ取得のタイミング等)をまとめて`ui/`が使いやすい形(hookの戻り値)にする。Reactとドメインロジックをつなぐグルーはここだけに閉じる。
+   - `types/` — そのfeature内で複数セグメント(api/model/hooks/ui)にまたがって使うドメイン型。1セグメント内でしか使わない型はそのセグメント内に置き、無理にここへ追い出さない。
+   - `ui/` — UI層。`hooks/`を呼ぶだけの「dumbコンポーネント」。直接`api/`・`model/`を呼ばない、データ加工をしない。
 4. **共有層**(bulletproof-react由来): 複数featureで使う共通資材は`shared/`に置く。デフォルトで用意するのは`components`(共有UI)・`hooks`(共有フック)・`lib`(APIクライアント初期化等、サードパーティ再利用可能ライブラリのラップ)・`types`(共有型定義)の4つ。`utils`・`config`・`assets`・`testing`・`stores`は、実際にその種類の共通資材が2箇所以上で必要になったタイミングで追加し、空ディレクトリを放置しない。
 
 ## やること
@@ -39,7 +41,7 @@ model: sonnet
 呼び出し元に、以下を含む形で返す。
 
 - 提案するディレクトリ・ファイルのツリー(今回の要件に必要な範囲。新規作成分と既存分がわかるように)
-- 各層(routes/features内のapi・model・ui/shared)の役割分担と、どのファイルがどの層に属するか
+- 各層(routes/features内のapi・model・hooks・types・ui/shared)の役割分担と、どのファイルがどの層に属するか
 - 既存プロジェクト構成との差分(新たに導入が必要なライブラリ・ディレクトリがあれば明記)
 - 適用した共有メモリのdecision/convention(あれば)
 - リスク・要検証事項(将来featureが増えた場合に見直しが必要な点など)
